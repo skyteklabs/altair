@@ -1,0 +1,10 @@
+[workspace]
+resolver = "3"
+# Domain crates (domain/*) are pure rules: no axum, sqlx or other infrastructure (ADR-0005).
+# Service crates (services/*) wire domain crates to HTTP and storage.
+members = ["domain/*"]
+
+[workspace.package]
+edition = "2024"
+rust-version = "1.95"
+publish = false
