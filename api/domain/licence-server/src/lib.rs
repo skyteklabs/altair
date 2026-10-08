@@ -25,9 +25,23 @@ pub enum StaffRole {
     Sales,
 }
 
+/// Identifies a Staff member in the Backoffice.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StaffId(String);
+
+impl StaffId {
+    pub fn new(id: impl Into<String>) -> Self {
+        Self(id.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StaffMember {
-    pub staff_id: String,
+    pub staff_id: StaffId,
     pub role: StaffRole,
 }
 
@@ -94,7 +108,7 @@ pub enum AuditAction {
 /// One Staff action on a Licensee or Licence. Never edited or deleted.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuditEntry {
-    pub staff_id: String,
+    pub staff_id: StaffId,
     pub role: StaffRole,
     pub action: AuditAction,
     pub at: OffsetDateTime,

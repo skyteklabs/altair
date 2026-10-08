@@ -15,7 +15,7 @@ fn signer() -> TestSigner {
 fn request(role: StaffRole) -> IssueRequest {
     IssueRequest {
         staff_member: StaffMember {
-            staff_id: "staff-42".into(),
+            staff_id: StaffId::new("staff-42"),
             role,
         },
         at: datetime!(2026-10-08 23:30:00 -05:00),
@@ -79,7 +79,7 @@ fn a_successful_issue_writes_exactly_one_audit_entry() {
     let rows = store.rows.lock().unwrap();
     assert_eq!(rows.len(), 1);
     let (licence, audit) = &rows[0];
-    assert_eq!(audit.staff_id, "staff-42");
+    assert_eq!(audit.staff_id, StaffId::new("staff-42"));
     assert_eq!(audit.role, StaffRole::Sales);
     assert_eq!(audit.action, AuditAction::IssueLicence);
     assert_eq!(audit.at, datetime!(2026-10-08 23:30:00 -05:00));

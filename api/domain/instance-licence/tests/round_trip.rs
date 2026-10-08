@@ -15,7 +15,7 @@ fn a_licence_issued_by_the_licence_server_is_valid_on_the_instance() {
         &MemStore::default(),
         IssueRequest {
             staff_member: StaffMember {
-                staff_id: "staff-1".into(),
+                staff_id: StaffId::new("staff-1"),
                 role: StaffRole::Sales,
             },
             at: datetime!(2026-10-08 09:00:00 UTC),
