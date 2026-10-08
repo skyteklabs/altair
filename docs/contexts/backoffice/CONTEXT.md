@@ -107,7 +107,7 @@ The 14 days after a Licence expires during which its Instance works normally but
 _Avoid_: Buffer, overdue period
 
 **Expired Instance**:
-An Instance whose Licence is missing, invalid, revoked, or expired past its Grace period: all data stays readable, but nothing new can be recorded until a valid Licence is installed.
+An Instance whose Licence is missing, invalid, for another Instance or Instance address, revoked, or expired past its Grace period: all data stays readable, but nothing new can be recorded until a valid Licence is installed.
 _Avoid_: Locked instance, disabled instance, unlicensed
 
 ### Not yet modelled
