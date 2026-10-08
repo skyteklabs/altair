@@ -13,7 +13,32 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-forbidden='^(axum|sqlx|tokio|hyper|tower|reqwest|utoipa|diesel|sea-orm|actix|rusqlite|postgres|redis|async-std|smol|tonic|mongodb|rdkafka|aws-sdk|aws-config|aws-smithy|lapin)([-_].*)?$'
+banned=(
+  axum
+  sqlx
+  tokio
+  hyper
+  tower
+  reqwest
+  utoipa
+  diesel
+  sea-orm
+  actix
+  rusqlite
+  postgres
+  redis
+  async-std
+  smol
+  tonic
+  mongodb
+  rdkafka
+  aws-sdk
+  aws-config
+  aws-smithy
+  lapin
+)
+# Join with | for the regex alternation (IFS applies to "${banned[*]}" only inside the subshell).
+forbidden="^($(IFS='|'; echo "${banned[*]}"))([-_].*)?\$"
 bad=0
 for manifest in domain/*/Cargo.toml; do
   crate=$(dirname "$manifest")
