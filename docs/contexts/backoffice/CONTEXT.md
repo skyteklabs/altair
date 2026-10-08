@@ -71,7 +71,7 @@ An organisation, such as a bank, cooperative or company, that holds a Licence to
 _Avoid_: Customer, client, partner, tenant
 
 **Instance administrator**:
-A User of an Instance whom the Licensee's identity provider marks as an administrator: they install Licences, choose whether the Instance sends Check-ins, see its Active User count, and receive its expiry and Active User cap warnings inside the Instance.
+A User of an Instance whom the Licensee's identity provider marks as an administrator, acting for the Licensee inside the Instance; they receive its expiry and Active User cap warnings.
 _Avoid_: Admin (a Staff role), operator, Licensee contact
 
 **Licence**:
@@ -99,7 +99,7 @@ An Instance's optional, periodic report to Palmy for Licence renewal, revocation
 _Avoid_: Heartbeat, ping, phone-home, telemetry
 
 **Copied Instance**:
-An Instance whose Check-ins show it running in more than one place at once. Copies that never Check in, or that were copied together with their data, cannot be spotted.
+An Instance running in more than one place at once under one Licence.
 _Avoid_: Clone, pirated instance, duplicate installation
 
 **Grace period**:
@@ -107,7 +107,7 @@ The 14 days after a Licence expires during which its Instance works normally but
 _Avoid_: Buffer, overdue period
 
 **Expired Instance**:
-An Instance without a valid Licence (none installed, revoked, or expired past its Grace period): all data stays readable, but nothing new can be recorded until a valid Licence is installed.
+An Instance whose Licence is missing, invalid, revoked, or expired past its Grace period: all data stays readable, but nothing new can be recorded until a valid Licence is installed.
 _Avoid_: Locked instance, disabled instance, unlicensed
 
 ### Not yet modelled
