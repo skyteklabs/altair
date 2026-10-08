@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
 # Fail if any domain crate depends on infrastructure crates (ADR-0005).
 # This list is the single source of truth for what counts as infrastructure.
-# Each name also bans its prefixed siblings (sqlx-core, tokio-util, axum-core, ...).
+# Each name also bans every crate named <name>-* or <name>_* (sqlx-core, tokio-util,
+# diesel_migrations, ...). This over-matches on purpose: a harmless crate that shares
+# a prefix (tower-like) is flagged too; rename the dependency or drop the entry.
+# Dev-dependencies are checked as well, so a test-only tokio fails CI too.
+# Target-specific dependencies are checked on all platforms (--target all).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-forbidden='^(axum|sqlx|tokio|hyper|tower|reqwest|utoipa|diesel|sea-orm)(-.*)?$'
+forbidden='^(axum|sqlx|tokio|hyper|tower|reqwest|utoipa|diesel|sea-orm|actix-web|rusqlite|postgres|redis)([-_].*)?$'
 bad=0
 for manifest in domain/*/Cargo.toml; do
   crate=$(dirname "$manifest")
-  deps=$(cargo tree --manifest-path "$manifest" --prefix none --edges normal,build,dev --all-features \
+  deps=$(cargo tree --manifest-path "$manifest" --prefix none --edges normal,build,dev --all-features --target all \
     | awk '{print $1}' | sort -u)
   hits=$(grep -E "$forbidden" <<<"$deps" || true)
   if [ -n "$hits" ]; then
