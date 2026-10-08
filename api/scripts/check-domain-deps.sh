@@ -5,9 +5,7 @@
 # diesel_migrations, ...). This over-matches on purpose: a harmless crate that shares
 # a prefix (smol_str, matched by smol) is flagged too. Aliasing does not help (cargo tree
 # prints the real package name); drop the dependency or narrow the pattern below.
-# Some entries are prefixes, not crates: aws-sdk matches aws-sdk-s3 and friends, and
-# aws-smithy matches aws-smithy-runtime and friends. aws-config sits outside the aws-sdk
-# prefix, so it is listed separately, as is aws-smithy.
+# aws-sdk and aws-smithy are prefixes (aws-sdk-s3, aws-smithy-runtime); aws-config is under neither, so it is listed too.
 # Dev-dependencies are checked as well, so a test-only tokio fails CI too.
 # Target-specific dependencies are checked on all platforms (--target all).
 set -euo pipefail
