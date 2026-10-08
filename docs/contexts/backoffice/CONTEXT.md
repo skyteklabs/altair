@@ -1,0 +1,103 @@
+# Backoffice
+
+The Backoffice is the business side of Palmy: who can sign in, what they pay for, and how Palmy staff support them through the internal dashboard. Staff never see anything inside a Space (ADR-0006); the finance vocabulary lives in the [Ledger](../ledger/CONTEXT.md) context. Conversations with Users happen in an external helpdesk, outside Palmy.
+
+## Language
+
+### Users
+
+**User**:
+A person with a Palmy login, signed in through Apple, Google or an emailed one-time code. In the Ledger, a User acts as a Member of Spaces.
+_Avoid_: Account, customer, member (outside a Space), profile
+
+**Suspension**:
+A block placed by Staff that stops a User from signing in, without deleting anything.
+_Avoid_: Ban, lock, deactivation
+
+### Paying
+
+**Plan**:
+A level of Palmy features a User can have: Free or Premium.
+_Avoid_: Tier, licence (a different concept), package, product
+
+**Free**:
+The Plan every User starts on: a Personal space with up to the Wallet limit (5 by default, set by Growth) in a single currency. A Free User can join a Premium Space but cannot create a shared Space.
+_Avoid_: Basic, trial
+
+**Premium**:
+The paid Plan, which adds shared Spaces, Investing, multiple currencies and unlimited Wallets.
+_Avoid_: Pro, plus, paid
+
+**Subscription**:
+A User's right to Premium for a period, bought through the App Store or Play Store or granted by a Promo code. It belongs to the User, never to a Space.
+_Avoid_: Licence (a different concept), membership, purchase
+
+**Promo code**:
+A code, created by Staff, that grants a free period of Premium when a User redeems it; no payment is involved.
+_Avoid_: Coupon, voucher, discount code, promo
+
+**Redemption**:
+One User's use of a Promo code, which starts a Subscription.
+_Avoid_: Claim, use, activation
+
+_Example_: Alice redeems the Promo code LEBARAN26 for 3 months of Premium. Her Subscription makes the household Space she shares with Bob a Premium Space, even though Bob is on Free.
+
+### Staff
+
+**Staff**:
+A Palmy employee who signs in to the dashboard with a company Google Workspace identity; Staff are never Users and can never sign in as one.
+_Avoid_: Admin (as a person), agent, operator, employee
+
+**Staff role**:
+What a Staff member may do: Admin (everything, including managing Staff and revoking Licences), Support (looking up Users, their Subscriptions, Suspensions and deletion on request), Growth (Plans, the Wallet limit and Promo codes) or Sales (issuing and renewing Licences).
+_Avoid_: Permission, group, level
+
+**Audit entry**:
+A permanent record of one Staff action: which Staff member did what, when, and to which User. Staff cannot edit or delete Audit entries.
+_Avoid_: Log, history, activity
+
+### Self-hosting
+
+**Palmy Cloud**:
+The Palmy service run by Palmy itself, which Users reach through the store apps and pay for with Subscriptions.
+_Avoid_: SaaS, hosted version, main server
+
+**Instance**:
+A copy of Palmy that a Licensee runs on its own servers at its own domain, with its own Users, who sign in through the Licensee's identity provider, and data that Palmy can never read. Every User on an Instance gets all Licensed features; Plans, Subscriptions and Promo codes do not exist there.
+_Avoid_: Self-hosted server, deployment, installation, tenant
+
+**Licensee**:
+An organisation, such as a bank, cooperative or company, that holds a Licence to run an Instance.
+_Avoid_: Customer, client, partner, tenant
+
+**Licence**:
+A document signed by Palmy that permits one Licensee to run one Instance, at one domain, until an expiry date, for up to a number of Active Users and with a set of Licensed features; it can be verified without contacting Palmy.
+_Avoid_: License key, subscription, activation, serial
+
+**Active User**:
+A User of an Instance who has signed in within the last 30 days; this is what a Licence's User cap counts.
+_Avoid_: Seat, licensed user, MAU
+
+**Licensed feature**:
+A part of Palmy, such as Investing or shared Spaces, that a Licence switches on for its Instance.
+_Avoid_: Module, add-on, entitlement
+
+**Instance address**:
+The domain of an Instance, which a User enters or scans in the official app to use that Instance instead of Palmy Cloud.
+_Avoid_: Server URL, endpoint, workspace
+
+**Check-in**:
+An Instance's optional, periodic report to Palmy for Licence renewal, revocation and usage counts; it never carries Ledger data.
+_Avoid_: Heartbeat, ping, phone-home, telemetry
+
+**Grace period**:
+The 14 days after a Licence expires during which its Instance works normally but shows a renewal warning.
+_Avoid_: Buffer, overdue period
+
+**Expired Instance**:
+An Instance whose Licence was revoked, or expired and whose Grace period has passed: all data stays readable, but nothing new can be recorded until a valid Licence is installed.
+_Avoid_: Locked instance, disabled instance, unlicensed
+
+### Not yet modelled
+
+White-label apps per Licensee, sign-in built into an Instance (for Licensees without an identity provider), and selling Licensed features separately are deliberately left for later.

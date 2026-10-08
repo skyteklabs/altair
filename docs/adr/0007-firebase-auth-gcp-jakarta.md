@@ -1,0 +1,3 @@
+# Users sign in through Firebase Auth; everything runs on GCP Jakarta
+
+User sign-in (Apple, Google, emailed one-time code) is handled by Firebase Auth; the Rust API only verifies its tokens and never stores passwords. Staff sign in separately through the company's Google Workspace. Everything is hosted in GCP's Jakarta region (asia-southeast2): the API on Cloud Run and PostgreSQL on Cloud SQL. We chose Jakarta for Indonesia's personal data protection law (UU PDP) and latency to Indonesian users, and a managed identity provider because building sign-in ourselves is security-sensitive work with no product benefit.

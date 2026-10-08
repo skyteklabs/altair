@@ -1,0 +1,3 @@
+# Out-of-pocket expenses touch no Wallet
+
+Every other Transaction touches at least one Wallet of its Space, but an Out-of-pocket expense touches none: it records an Expense of a shared Space that a Member paid with their own money (e.g. household groceries on Alice's personal card). We chose this over forcing the Member's personal Wallet into the shared Space (which leaks their personal spending) or leaving the Expense out of the shared Space (which makes its Budgets wrong). Don't "fix" it by making a Wallet required: the missing Wallet is deliberate, and Out-of-pocket expenses are the hook a future debts feature ("the household owes Alice") will build on.
