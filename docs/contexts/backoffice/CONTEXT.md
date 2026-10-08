@@ -63,7 +63,7 @@ The Palmy service run by Palmy itself, which Users reach through the store apps 
 _Avoid_: SaaS, hosted version, main server
 
 **Instance**:
-A copy of Palmy that a Licensee runs on its own servers at its own domain, with its own Users, who sign in through the Licensee's identity provider, and data that Palmy can never read. Every User on an Instance gets all Licensed features; Plans, Subscriptions and Promo codes do not exist there.
+A Palmy service that a Licensee runs on its own servers at its own domain, with its own Users, who sign in through the Licensee's identity provider, and data that Palmy can never read. Every User on an Instance gets all Licensed features; Plans, Subscriptions and Promo codes do not exist there.
 _Avoid_: Self-hosted server, deployment, installation, tenant
 
 **Licensee**:
@@ -91,7 +91,7 @@ A part of Palmy, such as Investing or shared Spaces, that a Licence switches on 
 _Avoid_: Module, add-on, entitlement
 
 **Instance address**:
-The domain of an Instance, which a User enters or scans in the official app to use that Instance instead of Palmy Cloud.
+The domain of an Instance, set by its Licensee, which a User enters or scans in the official app to use that Instance instead of Palmy Cloud.
 _Avoid_: Server URL, endpoint, workspace
 
 **Check-in**:
