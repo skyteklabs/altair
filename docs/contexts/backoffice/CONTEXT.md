@@ -7,7 +7,7 @@ The Backoffice is the business side of Palmy: who can sign in, what they pay for
 ### Users
 
 **User**:
-A person with a Palmy login, signed in through Apple, Google or an emailed one-time code. In the Ledger, a User acts as a Member of Spaces.
+A person who signs in to Palmy: on Palmy Cloud through Apple, Google or an emailed one-time code, or on an Instance through its Licensee's identity provider. In the Ledger, a User acts as a Member of Spaces.
 _Avoid_: Account, customer, member (outside a Space), profile
 
 **Suspension**:
@@ -75,12 +75,16 @@ A User of an Instance whom the Licensee's identity provider marks as an administ
 _Avoid_: Admin (a Staff role), operator, Licensee contact
 
 **Licence**:
-A document signed by Palmy that permits one Licensee to run one Instance, at one domain, until an expiry date, for up to a number of Active Users and with a set of Licensed features; it can be verified without contacting Palmy.
+A document signed by Palmy that permits one Licensee to run one Instance, at one domain, until an expiry date, up to its Active User cap and with a set of Licensed features; it can be verified without contacting Palmy.
 _Avoid_: License key, subscription, activation, serial
 
 **Active User**:
-A User of an Instance who has signed in within the last 30 days; this is what a Licence's User cap counts.
+A User of an Instance who has signed in within the last 30 days; this is what the Active User cap counts.
 _Avoid_: Seat, licensed user, MAU
+
+**Active User cap**:
+The most Active Users a Licence allows its Instance to have at once.
+_Avoid_: Seat limit, user limit, licence cap
 
 **Licensed feature**:
 A part of Palmy, such as Investing or shared Spaces, that a Licence switches on for its Instance.
@@ -95,7 +99,7 @@ An Instance's optional, periodic report to Palmy for Licence renewal, revocation
 _Avoid_: Heartbeat, ping, phone-home, telemetry
 
 **Copied Instance**:
-An Instance whose Check-ins show it running in more than one place at once, which Sales Staff are alerted to. Copies that never Check in cannot be spotted.
+An Instance whose Check-ins show it running in more than one place at once. Copies that never Check in, or that were copied together with their data, cannot be spotted.
 _Avoid_: Clone, pirated instance, duplicate installation
 
 **Grace period**:
@@ -103,7 +107,7 @@ The 14 days after a Licence expires during which its Instance works normally but
 _Avoid_: Buffer, overdue period
 
 **Expired Instance**:
-An Instance that has no valid Licence installed, or whose Licence was revoked, or expired and whose Grace period has passed: all data stays readable, but nothing new can be recorded until a valid Licence is installed.
+An Instance without a valid Licence (none installed, revoked, or expired past its Grace period): all data stays readable, but nothing new can be recorded until a valid Licence is installed.
 _Avoid_: Locked instance, disabled instance, unlicensed
 
 ### Not yet modelled
