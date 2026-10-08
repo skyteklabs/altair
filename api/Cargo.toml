@@ -2,7 +2,6 @@
 resolver = "3"
 # Domain crates (domain/*) are pure rules, free of infrastructure (ADR-0005).
 # The banned list lives in scripts/check-domain-deps.sh.
-# Service crates (services/*) wire domain crates to HTTP and storage.
 members = ["domain/*"]
 
 [workspace.package]
