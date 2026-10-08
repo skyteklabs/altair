@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fail if any domain crate depends on infrastructure crates (ADR-0005).
-# This list is the single source of truth for what counts as infrastructure.
+# The banned array below is the single source of truth for what counts as infrastructure.
 # Each name also bans every crate named <name>-* or <name>_* (sqlx-core, tokio-util,
 # diesel_migrations, ...). This over-matches on purpose: a harmless crate that shares
 # a prefix (smol_str, matched by smol) is flagged too. Aliasing does not help (cargo tree
