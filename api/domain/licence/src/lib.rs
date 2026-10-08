@@ -9,6 +9,7 @@ use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use ed25519_dalek::{Signature, Verifier, VerifyingKey};
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::num::NonZeroU32;
 use time::Date;
 
 /// The only format version this crate reads or writes.
@@ -125,6 +126,36 @@ impl From<KeyId> for String {
     }
 }
 
+/// The most Active Users an Instance may have. At least 1: a cap of 0 would
+/// lock every User out at once (ADR-0013). The only constructor is `new`, so
+/// the rule lives here.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "u32", into = "u32")]
+pub struct ActiveUserCap(NonZeroU32);
+
+impl ActiveUserCap {
+    pub fn new(cap: u32) -> Option<Self> {
+        NonZeroU32::new(cap).map(Self)
+    }
+
+    pub fn get(self) -> u32 {
+        self.0.get()
+    }
+}
+
+impl TryFrom<u32> for ActiveUserCap {
+    type Error = FormatError;
+    fn try_from(cap: u32) -> Result<Self, FormatError> {
+        Self::new(cap).ok_or(FormatError::Malformed)
+    }
+}
+
+impl From<ActiveUserCap> for u32 {
+    fn from(cap: ActiveUserCap) -> u32 {
+        cap.get()
+    }
+}
+
 /// The signed content of a Licence. Unknown fields are rejected.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -139,7 +170,7 @@ pub struct Licence {
     pub issued: Date,
     #[serde(with = "calendar_date")]
     pub expires: Date,
-    pub active_user_cap: u32,
+    pub active_user_cap: ActiveUserCap,
     /// Open set: names an Instance does not know are ignored (ADR-0013).
     pub licensed_features: Vec<String>,
     pub key_id: KeyId,
@@ -154,13 +185,9 @@ impl Licence {
 }
 
 /// Parses a payload strictly. Does not check the format version; callers
-/// check it first (ADR-0013 order). Rejects a zero Active User cap.
+/// check it first (ADR-0013 order). A zero cap fails in `ActiveUserCap`.
 pub fn parse_payload(payload: &[u8]) -> Result<Licence, FormatError> {
-    let licence: Licence = serde_json::from_slice(payload).map_err(|_| FormatError::Malformed)?;
-    if licence.active_user_cap == 0 {
-        return Err(FormatError::Malformed);
-    }
-    Ok(licence)
+    serde_json::from_slice(payload).map_err(|_| FormatError::Malformed)
 }
 
 #[derive(Deserialize)]

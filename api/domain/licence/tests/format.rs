@@ -18,7 +18,7 @@ fn sample() -> Licence {
         instance_address: "bank.example".into(),
         issued: date!(2026 - 10 - 08),
         expires: date!(2027 - 10 - 08),
-        active_user_cap: 50,
+        active_user_cap: ActiveUserCap::new(50).unwrap(),
         licensed_features: vec!["investing".into()],
         key_id: KeyId::new("key-1").unwrap(),
         format_version: FORMAT_VERSION,
@@ -103,13 +103,16 @@ fn unknown_payload_fields_are_rejected() {
 }
 
 #[test]
-fn zero_active_user_cap_is_malformed() {
-    let mut licence = sample();
-    licence.active_user_cap = 0;
-    assert_eq!(
-        parse_payload(&licence.payload_bytes()),
-        Err(FormatError::Malformed)
-    );
+fn zero_active_user_cap_is_refused_by_the_type() {
+    assert_eq!(ActiveUserCap::new(0), None);
+}
+
+#[test]
+fn zero_active_user_cap_in_a_payload_is_malformed() {
+    let mut value: serde_json::Value = serde_json::from_slice(&sample().payload_bytes()).unwrap();
+    value["active_user_cap"] = 0.into();
+    let bytes = serde_json::to_vec(&value).unwrap();
+    assert_eq!(parse_payload(&bytes), Err(FormatError::Malformed));
 }
 
 #[test]

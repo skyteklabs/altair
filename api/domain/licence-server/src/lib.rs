@@ -4,7 +4,10 @@
 //! `IdSource` and `LicenceStore`. The store saves the Licence and its Audit
 //! entry together, so an issued Licence always has its Audit entry.
 
-use licence::{FORMAT_VERSION, InstanceId, KeyId, Licence, LicenceId, LicenseeId, encode_envelope};
+use licence::{
+    ActiveUserCap, FORMAT_VERSION, InstanceId, KeyId, Licence, LicenceId, LicenseeId,
+    encode_envelope,
+};
 use std::fmt;
 use std::future::Future;
 use time::{Date, OffsetDateTime, UtcOffset};
@@ -134,9 +137,8 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
             }));
         }
     }
-    if req.active_user_cap == 0 {
-        return Err(IssueError::Rule(RuleViolation::ActiveUserCapMustBePositive));
-    }
+    let active_user_cap = ActiveUserCap::new(req.active_user_cap)
+        .ok_or(IssueError::Rule(RuleViolation::ActiveUserCapMustBePositive))?;
     if req.licensee_name.trim().is_empty() {
         return Err(IssueError::Rule(RuleViolation::LicenseeNameEmpty));
     }
@@ -158,7 +160,7 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
         instance_address: req.instance_address,
         issued,
         expires: req.expires,
-        active_user_cap: req.active_user_cap,
+        active_user_cap,
         licensed_features: req.licensed_features,
         key_id: signer.key_id(),
         format_version: FORMAT_VERSION,

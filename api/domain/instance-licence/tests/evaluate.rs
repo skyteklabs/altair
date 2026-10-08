@@ -27,7 +27,7 @@ fn licence_for(instance: &str, key_id: &str) -> Licence {
         instance_address: "bank.example".into(),
         issued: date!(2026 - 10 - 08),
         expires: date!(2027 - 10 - 08),
-        active_user_cap: 50,
+        active_user_cap: ActiveUserCap::new(50).unwrap(),
         licensed_features: vec!["investing".into()],
         key_id: KeyId::new(key_id).unwrap(),
         format_version: FORMAT_VERSION,
