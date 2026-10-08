@@ -74,7 +74,7 @@ fn signer() -> TestSigner {
 
 fn request(role: StaffRole) -> IssueRequest {
     IssueRequest {
-        actor: StaffMember {
+        staff_member: StaffMember {
             staff_id: "staff-42".into(),
             role,
         },

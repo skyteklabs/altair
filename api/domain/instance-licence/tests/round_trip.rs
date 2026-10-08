@@ -53,7 +53,7 @@ fn a_licence_issued_by_the_licence_server_is_valid_on_the_instance() {
         &SeqIds(Cell::new(0)),
         &MemStore::default(),
         IssueRequest {
-            actor: StaffMember {
+            staff_member: StaffMember {
                 staff_id: "staff-1".into(),
                 role: StaffRole::Sales,
             },

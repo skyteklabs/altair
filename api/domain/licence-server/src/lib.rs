@@ -99,7 +99,7 @@ pub struct AuditEntry {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IssueRequest {
-    pub actor: StaffMember,
+    pub staff_member: StaffMember,
     /// Time of the action. Its UTC date is the Licence's issue date.
     pub at: OffsetDateTime,
     pub licensee_id: LicenseeId,
@@ -126,7 +126,7 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
     store: &L,
     req: IssueRequest,
 ) -> Result<IssuedLicence, IssueError> {
-    match req.actor.role {
+    match req.staff_member.role {
         StaffRole::Sales | StaffRole::Admin => {}
         role => {
             return Err(IssueError::Rule(RuleViolation::OnlySalesOrAdminMayIssue {
@@ -169,8 +169,8 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
     let bytes = encode_envelope(&payload, &signature);
 
     let audit = AuditEntry {
-        staff_id: req.actor.staff_id,
-        role: req.actor.role,
+        staff_id: req.staff_member.staff_id,
+        role: req.staff_member.role,
         action: AuditAction::IssueLicence,
         at: req.at,
         licensee_id: licence.licensee_id,
