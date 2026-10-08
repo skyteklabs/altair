@@ -20,7 +20,7 @@ This repo is multi-context. Glossaries live under `docs/contexts/` rather than n
 │   ├── adr/                           ← all decisions, system-wide and per-context
 │   └── contexts/
 │       ├── ledger/CONTEXT.md          ← Spaces, Wallets, Transactions, Budgets, Investing
-│       └── backoffice/CONTEXT.md      ← Users, Plans, Subscriptions, Promo codes, Staff
+│       └── backoffice/CONTEXT.md      ← Users, Plans, Subscriptions, Promo codes, Staff, Licences
 ├── api/                               ← Rust workspace
 ├── dashboard/                         ← React internal dashboard
 ├── ios/

@@ -7,7 +7,7 @@ The Backoffice is the business side of Palmy: who can sign in, what they pay for
 ### Users
 
 **User**:
-A person with a Palmy login, signed in through Apple, Google or an emailed one-time code. In the Ledger, a User acts as a Member of Spaces.
+A person who signs in to Palmy: on Palmy Cloud through Apple, Google or an emailed one-time code, or on an Instance through its Licensee's identity provider. In the Ledger, a User acts as a Member of Spaces.
 _Avoid_: Account, customer, member (outside a Space), profile
 
 **Suspension**:
@@ -53,7 +53,7 @@ What a Staff member may do: Admin (everything, including managing Staff and revo
 _Avoid_: Permission, group, level
 
 **Audit entry**:
-A permanent record of one Staff action: which Staff member did what, when, and to which User. Staff cannot edit or delete Audit entries.
+A permanent record of one Staff action: which Staff member did what, when, and to what, such as a User, a Promo code, a Licensee or a Licence. Staff cannot edit or delete Audit entries.
 _Avoid_: Log, history, activity
 
 ### Self-hosting
@@ -63,39 +63,51 @@ The Palmy service run by Palmy itself, which Users reach through the store apps 
 _Avoid_: SaaS, hosted version, main server
 
 **Instance**:
-A copy of Palmy that a Licensee runs on its own servers at its own domain, with its own Users, who sign in through the Licensee's identity provider, and data that Palmy can never read. Every User on an Instance gets all Licensed features; Plans, Subscriptions and Promo codes do not exist there.
+Palmy as run by a Licensee on its own servers at its own Instance address, with its own Users, who sign in through the Licensee's identity provider, and data that Palmy can never read. Every User on an Instance gets all Licensed features; Plans, Subscriptions and Promo codes do not exist there.
 _Avoid_: Self-hosted server, deployment, installation, tenant
 
 **Licensee**:
 An organisation, such as a bank, cooperative or company, that holds a Licence to run an Instance.
 _Avoid_: Customer, client, partner, tenant
 
+**Instance administrator**:
+A User of an Instance whom the Licensee's identity provider marks as an administrator, acting for the Licensee inside the Instance; they receive its expiry and Active User cap warnings.
+_Avoid_: Admin (a Staff role), operator, Licensee contact
+
 **Licence**:
-A document signed by Palmy that permits one Licensee to run one Instance, at one domain, until an expiry date, for up to a number of Active Users and with a set of Licensed features; it can be verified without contacting Palmy.
+A document signed by Palmy that permits one Licensee to run one Instance, at one Instance address, until an expiry date, up to its Active User cap and with a set of Licensed features; it can be verified without contacting Palmy.
 _Avoid_: License key, subscription, activation, serial
 
 **Active User**:
-A User of an Instance who has signed in within the last 30 days; this is what a Licence's User cap counts.
+A User of an Instance who has signed in within the last 30 days; this is what the Active User cap counts.
 _Avoid_: Seat, licensed user, MAU
+
+**Active User cap**:
+The most Active Users an Instance may have.
+_Avoid_: Seat limit, user limit, licence cap
 
 **Licensed feature**:
 A part of Palmy, such as Investing or shared Spaces, that a Licence switches on for its Instance.
 _Avoid_: Module, add-on, entitlement
 
 **Instance address**:
-The domain of an Instance, which a User enters or scans in the official app to use that Instance instead of Palmy Cloud.
+The domain of an Instance, set by its Licensee, which a User enters or scans in the official app to use that Instance instead of Palmy Cloud.
 _Avoid_: Server URL, endpoint, workspace
 
 **Check-in**:
-An Instance's optional, periodic report to Palmy for Licence renewal, revocation and usage counts; it never carries Ledger data.
+An Instance's optional, periodic report to Palmy for Licence renewal, revocation, usage counts and spotting Copied Instances; it never carries Ledger data.
 _Avoid_: Heartbeat, ping, phone-home, telemetry
+
+**Copied Instance**:
+An Instance running in more than one place at once.
+_Avoid_: Clone, pirated instance, duplicate installation
 
 **Grace period**:
 The 14 days after a Licence expires during which its Instance works normally but shows a renewal warning.
 _Avoid_: Buffer, overdue period
 
 **Expired Instance**:
-An Instance whose Licence was revoked, or expired and whose Grace period has passed: all data stays readable, but nothing new can be recorded until a valid Licence is installed.
+An Instance with no valid Licence, as ADR-0011 defines it, including one revoked or expired past its Grace period: all data stays readable, but nothing new can be recorded until a valid Licence is installed.
 _Avoid_: Locked instance, disabled instance, unlicensed
 
 ### Not yet modelled
