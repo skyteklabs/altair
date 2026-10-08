@@ -209,3 +209,47 @@ fn a_store_failure_is_reported() {
         Err(IssueError::Store(StoreError("disk full".into())))
     );
 }
+
+#[test]
+fn an_expiry_before_the_issue_date_is_refused() {
+    let store = MemStore::default();
+    let mut req = request(StaffRole::Sales);
+    req.expires = date!(2026 - 10 - 08); // issue date is 2026-10-09 (UTC)
+    assert_eq!(
+        run(&signer(), &store, req),
+        Err(IssueError::Rule(RuleViolation::ExpiryBeforeIssue))
+    );
+    assert!(store.rows.lock().unwrap().is_empty());
+}
+
+#[test]
+fn an_expiry_on_the_issue_date_is_allowed() {
+    let store = MemStore::default();
+    let mut req = request(StaffRole::Sales);
+    req.expires = date!(2026 - 10 - 09);
+    assert!(run(&signer(), &store, req).is_ok());
+}
+
+#[test]
+fn an_empty_licensee_name_is_refused() {
+    let store = MemStore::default();
+    let mut req = request(StaffRole::Sales);
+    req.licensee_name = "   ".into();
+    assert_eq!(
+        run(&signer(), &store, req),
+        Err(IssueError::Rule(RuleViolation::LicenseeNameEmpty))
+    );
+    assert!(store.rows.lock().unwrap().is_empty());
+}
+
+#[test]
+fn an_empty_instance_address_is_refused() {
+    let store = MemStore::default();
+    let mut req = request(StaffRole::Sales);
+    req.instance_address = String::new();
+    assert_eq!(
+        run(&signer(), &store, req),
+        Err(IssueError::Rule(RuleViolation::InstanceAddressEmpty))
+    );
+    assert!(store.rows.lock().unwrap().is_empty());
+}

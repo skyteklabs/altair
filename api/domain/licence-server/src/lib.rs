@@ -30,6 +30,9 @@ pub struct StaffMember {
 pub enum RuleViolation {
     OnlySalesOrAdminMayIssue { role: StaffRole },
     ActiveUserCapMustBePositive,
+    ExpiryBeforeIssue,
+    LicenseeNameEmpty,
+    InstanceAddressEmpty,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -134,6 +137,16 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
     if req.active_user_cap == 0 {
         return Err(IssueError::Rule(RuleViolation::ActiveUserCapMustBePositive));
     }
+    if req.licensee_name.trim().is_empty() {
+        return Err(IssueError::Rule(RuleViolation::LicenseeNameEmpty));
+    }
+    if req.instance_address.trim().is_empty() {
+        return Err(IssueError::Rule(RuleViolation::InstanceAddressEmpty));
+    }
+    let issued = req.at.to_offset(UtcOffset::UTC).date();
+    if req.expires < issued {
+        return Err(IssueError::Rule(RuleViolation::ExpiryBeforeIssue));
+    }
 
     let instance_id = InstanceId::from_uuid(ids.next_id());
     let licence_id = LicenceId::from_uuid(ids.next_id());
@@ -143,7 +156,7 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
         licensee_name: req.licensee_name.clone(),
         instance_id,
         instance_address: req.instance_address,
-        issued: req.at.to_offset(UtcOffset::UTC).date(),
+        issued,
         expires: req.expires,
         active_user_cap: req.active_user_cap,
         licensed_features: req.licensed_features,
