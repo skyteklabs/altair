@@ -2,7 +2,7 @@
 
 /// Name of the product this workspace serves.
 pub fn product_name() -> &'static str {
-    "Altair"
+    "Palmy"
 }
 
 #[cfg(test)]
@@ -11,6 +11,6 @@ mod tests {
 
     #[test]
     fn names_the_product() {
-        assert_eq!(product_name(), "Altair");
+        assert_eq!(product_name(), "Palmy");
     }
 }

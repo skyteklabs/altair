@@ -4,7 +4,7 @@ Rust workspace for the Altair API.
 
 ## Layout
 
-- `domain/*`: domain crates. Pure rules, **no infrastructure dependencies** (no axum, sqlx, tokio, utoipa, ...). See ADR-0005.
+- `domain/*`: domain crates. Pure rules, **no infrastructure dependencies**. See ADR-0005. The banned crates are listed in `scripts/check-domain-deps.sh`, which CI runs.
 - `services/*`: service crates (not created yet) that wire domain crates to HTTP and storage. Add `"services/*"` to `members` in `Cargo.toml` when the first one lands.
 
 ## Commands
