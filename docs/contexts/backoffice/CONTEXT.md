@@ -99,7 +99,7 @@ An Instance's optional, periodic report to Palmy for Licence renewal, revocation
 _Avoid_: Heartbeat, ping, phone-home, telemetry
 
 **Copied Instance**:
-An Instance running in more than one place at once under one Licence.
+An Instance running in more than one place at once.
 _Avoid_: Clone, pirated instance, duplicate installation
 
 **Grace period**:
