@@ -50,4 +50,19 @@ for manifest in domain/*/Cargo.toml; do
     bad=1
   fi
 done
+# time's std and local-offset features read the system clock or the local
+# timezone, which domain crates must not do: "today" is always an input (ADR-0013).
+# Feature edges are checked the same way as dependency edges, so transitive
+# enablement (e.g. formatting pulling in std) is caught too.
+for manifest in domain/*/Cargo.toml; do
+  crate=$(dirname "$manifest")
+  clock_features=$(cargo tree --manifest-path "$manifest" -e features,normal,build,dev --all-features --target all \
+    -i time --prefix none 2>/dev/null \
+    | grep -E '^time feature "(std|local-offset)"' | sort -u || true)
+  if [ -n "$clock_features" ]; then
+    echo "$crate enables time features that read the clock:" >&2
+    echo "$clock_features" >&2
+    bad=1
+  fi
+done
 exit "$bad"

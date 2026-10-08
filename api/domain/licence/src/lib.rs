@@ -240,20 +240,41 @@ pub fn verify_signature(payload: &[u8], signature: &[u8], key: &VerifyingKey) ->
     }
 }
 
+/// `YYYY-MM-DD`, written by hand so `time` needs no `formatting` or `parsing`
+/// feature (both pull in `std`; see scripts/check-domain-deps.sh).
 mod calendar_date {
     use serde::{Deserialize, Deserializer, Serializer};
-    use time::Date;
-    use time::format_description::well_known::Iso8601;
+    use time::{Date, Month};
 
     pub fn serialize<S: Serializer>(date: &Date, s: S) -> Result<S::Ok, S::Error> {
-        let text = date
-            .format(&Iso8601::DATE)
-            .map_err(serde::ser::Error::custom)?;
-        s.serialize_str(&text)
+        s.serialize_str(&format!(
+            "{:04}-{:02}-{:02}",
+            date.year(),
+            u8::from(date.month()),
+            date.day()
+        ))
     }
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Date, D::Error> {
         let text = String::deserialize(d)?;
-        Date::parse(&text, &Iso8601::DATE).map_err(serde::de::Error::custom)
+        parse(&text).ok_or_else(|| serde::de::Error::custom("expected a YYYY-MM-DD date"))
+    }
+
+    fn parse(text: &str) -> Option<Date> {
+        let b = text.as_bytes();
+        if b.len() != 10 || b[4] != b'-' || b[7] != b'-' {
+            return None;
+        }
+        let digits = |range: std::ops::Range<usize>| -> Option<u32> {
+            let part = &text[range];
+            part.bytes()
+                .all(|c| c.is_ascii_digit())
+                .then(|| part.parse().ok())
+                .flatten()
+        };
+        let year = digits(0..4)? as i32;
+        let month = Month::try_from(digits(5..7)? as u8).ok()?;
+        let day = digits(8..10)? as u8;
+        Date::from_calendar_date(year, month, day).ok()
     }
 }
