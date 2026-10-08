@@ -1,69 +1,9 @@
-use ed25519_dalek::{Signer as _, SigningKey, VerifyingKey};
-use licence::{KeyId, Licence, LicenseeId, parse_payload, read_envelope, verify_signature};
+use ed25519_dalek::{SigningKey, VerifyingKey};
+use licence::{LicenseeId, parse_payload, read_envelope, verify_signature};
+use licence_server::test_support::{MemStore, SeqIds, TestSigner};
 use licence_server::*;
-use std::cell::Cell;
-use std::future::Future;
-use std::sync::Mutex;
 use time::macros::{date, datetime};
 use uuid::Uuid;
-
-struct TestSigner {
-    key: SigningKey,
-    fail: bool,
-}
-
-impl Signer for TestSigner {
-    fn key_id(&self) -> KeyId {
-        KeyId::new("key-1").unwrap()
-    }
-
-    fn sign(&self, payload: &[u8]) -> impl Future<Output = Result<Vec<u8>, SignerError>> + Send {
-        let result = if self.fail {
-            Err(SignerError("kms unavailable".into()))
-        } else {
-            Ok(self.key.sign(payload).to_bytes().to_vec())
-        };
-        async move { result }
-    }
-}
-
-struct SeqIds(Cell<u128>);
-
-impl SeqIds {
-    fn new() -> Self {
-        Self(Cell::new(0))
-    }
-}
-
-impl IdSource for SeqIds {
-    fn next_id(&self) -> Uuid {
-        let next = self.0.get() + 1;
-        self.0.set(next);
-        uuid::Builder::from_random_bytes(u128::to_be_bytes(next)).into_uuid()
-    }
-}
-
-#[derive(Default)]
-struct MemStore {
-    rows: Mutex<Vec<(Licence, AuditEntry)>>,
-    fail: bool,
-}
-
-impl LicenceStore for MemStore {
-    fn record_issue(
-        &self,
-        licence: Licence,
-        audit: AuditEntry,
-    ) -> impl Future<Output = Result<(), StoreError>> + Send {
-        let result = if self.fail {
-            Err(StoreError("disk full".into()))
-        } else {
-            self.rows.lock().unwrap().push((licence, audit));
-            Ok(())
-        };
-        async move { result }
-    }
-}
 
 fn signer() -> TestSigner {
     TestSigner {

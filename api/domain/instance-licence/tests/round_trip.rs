@@ -1,56 +1,17 @@
-use ed25519_dalek::{Signer as _, SigningKey};
+use ed25519_dalek::SigningKey;
 use instance_licence::{LicenceStatus, evaluate};
 use licence::{KeyId, LicenseeId};
+use licence_server::test_support::{MemStore, SeqIds, TestSigner};
 use licence_server::*;
-use std::cell::Cell;
-use std::future::Future;
-use std::sync::Mutex;
 use time::macros::{date, datetime};
 use uuid::Uuid;
-
-struct TestSigner(SigningKey);
-
-impl Signer for TestSigner {
-    fn key_id(&self) -> KeyId {
-        KeyId::new("key-1").unwrap()
-    }
-
-    fn sign(&self, payload: &[u8]) -> impl Future<Output = Result<Vec<u8>, SignerError>> + Send {
-        let result = Ok(self.0.sign(payload).to_bytes().to_vec());
-        async move { result }
-    }
-}
-
-struct SeqIds(Cell<u128>);
-
-impl IdSource for SeqIds {
-    fn next_id(&self) -> Uuid {
-        let next = self.0.get() + 1;
-        self.0.set(next);
-        uuid::Builder::from_random_bytes(u128::to_be_bytes(next)).into_uuid()
-    }
-}
-
-#[derive(Default)]
-struct MemStore(Mutex<usize>);
-
-impl LicenceStore for MemStore {
-    fn record_issue(
-        &self,
-        _licence: licence::Licence,
-        _audit: AuditEntry,
-    ) -> impl Future<Output = Result<(), StoreError>> + Send {
-        *self.0.lock().unwrap() += 1;
-        async { Ok(()) }
-    }
-}
 
 #[test]
 fn a_licence_issued_by_the_licence_server_is_valid_on_the_instance() {
     let key = SigningKey::from_bytes(&[7u8; 32]);
     let issued = pollster::block_on(issue(
-        &TestSigner(key.clone()),
-        &SeqIds(Cell::new(0)),
+        &TestSigner::new(key.clone()),
+        &SeqIds::new(),
         &MemStore::default(),
         IssueRequest {
             staff_member: StaffMember {

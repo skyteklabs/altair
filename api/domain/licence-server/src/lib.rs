@@ -4,6 +4,9 @@
 //! `IdSource` and `LicenceStore`. The store saves the Licence and its Audit
 //! entry together, so an issued Licence always has its Audit entry.
 
+#[cfg(feature = "test-support")]
+pub mod test_support;
+
 use licence::{
     ActiveUserCap, FORMAT_VERSION, InstanceId, KeyId, Licence, LicenceId, LicenseeId,
     encode_envelope,

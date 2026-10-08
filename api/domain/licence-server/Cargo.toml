@@ -6,12 +6,17 @@ edition.workspace = true
 rust-version.workspace = true
 publish.workspace = true
 
+[features]
+test-support = ["dep:ed25519-dalek"]
+
 [dependencies]
+ed25519-dalek = { version = "2", optional = true }
 licence = { path = "../licence" }
 time = { version = "0.3", default-features = false }
 uuid = { version = "1", default-features = false }
 
 [dev-dependencies]
+licence-server = { path = ".", features = ["test-support"] }
 ed25519-dalek = "2"
 pollster = "0.4"
 time = { version = "0.3", default-features = false, features = ["macros"] }

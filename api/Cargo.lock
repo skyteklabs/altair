@@ -201,6 +201,7 @@ version = "0.0.0"
 dependencies = [
  "ed25519-dalek",
  "licence",
+ "licence-server",
  "pollster",
  "time",
  "uuid",
