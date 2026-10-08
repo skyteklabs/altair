@@ -53,7 +53,7 @@ What a Staff member may do: Admin (everything, including managing Staff and revo
 _Avoid_: Permission, group, level
 
 **Audit entry**:
-A permanent record of one Staff action: which Staff member did what, when, and to what, such as a User, a Promo code, or a Licence (naming its Licensee). Staff cannot edit or delete Audit entries.
+A permanent record of one Staff action: which Staff member did what, when, and to what, such as a User, a Promo code, a Licensee or a Licence. Staff cannot edit or delete Audit entries.
 _Avoid_: Log, history, activity
 
 ### Self-hosting
@@ -83,7 +83,7 @@ A User of an Instance who has signed in within the last 30 days; this is what th
 _Avoid_: Seat, licensed user, MAU
 
 **Active User cap**:
-The most Active Users a Licence allows its Instance to have at once.
+The most Active Users a Licence allows its Instance to have.
 _Avoid_: Seat limit, user limit, licence cap
 
 **Licensed feature**:
