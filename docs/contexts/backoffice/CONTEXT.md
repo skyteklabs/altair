@@ -53,7 +53,7 @@ What a Staff member may do: Admin (everything, including managing Staff and revo
 _Avoid_: Permission, group, level
 
 **Audit entry**:
-A permanent record of one Staff action: which Staff member did what, when, and to which User. Staff cannot edit or delete Audit entries.
+A permanent record of one Staff action: which Staff member did what, when, and to what, such as a User, a Promo code, or a Licence (naming its Licensee). Staff cannot edit or delete Audit entries.
 _Avoid_: Log, history, activity
 
 ### Self-hosting
@@ -69,6 +69,10 @@ _Avoid_: Self-hosted server, deployment, installation, tenant
 **Licensee**:
 An organisation, such as a bank, cooperative or company, that holds a Licence to run an Instance.
 _Avoid_: Customer, client, partner, tenant
+
+**Instance administrator**:
+A User of an Instance whom the Licensee's identity provider marks as an administrator: they install Licences, choose whether the Instance sends Check-ins, see its Active User count, and receive its expiry and Active User cap warnings inside the Instance.
+_Avoid_: Admin (a Staff role), operator, Licensee contact
 
 **Licence**:
 A document signed by Palmy that permits one Licensee to run one Instance, at one domain, until an expiry date, for up to a number of Active Users and with a set of Licensed features; it can be verified without contacting Palmy.
@@ -90,12 +94,16 @@ _Avoid_: Server URL, endpoint, workspace
 An Instance's optional, periodic report to Palmy for Licence renewal, revocation and usage counts; it never carries Ledger data.
 _Avoid_: Heartbeat, ping, phone-home, telemetry
 
+**Copied Instance**:
+An Instance whose Check-ins show it running in more than one place at once, which Sales Staff are alerted to. Copies that never Check in cannot be spotted.
+_Avoid_: Clone, pirated instance, duplicate installation
+
 **Grace period**:
 The 14 days after a Licence expires during which its Instance works normally but shows a renewal warning.
 _Avoid_: Buffer, overdue period
 
 **Expired Instance**:
-An Instance whose Licence was revoked, or expired and whose Grace period has passed: all data stays readable, but nothing new can be recorded until a valid Licence is installed.
+An Instance that has no valid Licence installed, or whose Licence was revoked, or expired and whose Grace period has passed: all data stays readable, but nothing new can be recorded until a valid Licence is installed.
 _Avoid_: Locked instance, disabled instance, unlicensed
 
 ### Not yet modelled
