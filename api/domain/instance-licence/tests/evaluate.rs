@@ -1,5 +1,5 @@
 use ed25519_dalek::{SigningKey, VerifyingKey};
-use instance_licence::{InstanceLicenceReason::*, Status, evaluate};
+use instance_licence::{InstanceLicenceReason::*, LicenceStatus, evaluate};
 use licence::*;
 use time::macros::date;
 use uuid::uuid;
@@ -28,7 +28,7 @@ fn licence_for(instance: &str, key_id: &str) -> Licence {
         issued: date!(2026 - 10 - 08),
         expires: date!(2027 - 10 - 08),
         active_user_cap: 50,
-        features: vec!["investing".into()],
+        licensed_features: vec!["investing".into()],
         key_id: KeyId::new(key_id).unwrap(),
         format_version: FORMAT_VERSION,
     }
@@ -50,7 +50,7 @@ fn with_payload_field(licence: &Licence, field: &str, value: serde_json::Value) 
     serde_json::to_vec(&json).unwrap()
 }
 
-fn evaluate_file(file: Option<&[u8]>, keys: &[(&str, u8)]) -> Status {
+fn evaluate_file(file: Option<&[u8]>, keys: &[(&str, u8)]) -> LicenceStatus {
     evaluate(
         file,
         InstanceId::parse(THIS).unwrap(),
@@ -62,14 +62,14 @@ fn evaluate_file(file: Option<&[u8]>, keys: &[(&str, u8)]) -> Status {
 #[test]
 fn a_licence_issued_for_this_instance_is_valid() {
     let status = evaluate_file(Some(&valid_file()), &[("key-a", 7)]);
-    assert_eq!(status, Status::Valid(licence_for(THIS, "key-a")));
+    assert_eq!(status, LicenceStatus::Valid(licence_for(THIS, "key-a")));
 }
 
 #[test]
 fn no_file_is_no_licence() {
     assert_eq!(
         evaluate_file(None, &[("key-a", 7)]),
-        Status::Invalid(NoLicence)
+        LicenceStatus::Invalid(NoLicence)
     );
 }
 
@@ -77,7 +77,7 @@ fn no_file_is_no_licence() {
 fn non_json_file_is_malformed() {
     assert_eq!(
         evaluate_file(Some(b"garbage"), &[("key-a", 7)]),
-        Status::Invalid(Malformed)
+        LicenceStatus::Invalid(Malformed)
     );
 }
 
@@ -86,7 +86,7 @@ fn non_json_payload_is_malformed() {
     let file = file_signed_by(b"not a licence", 7);
     assert_eq!(
         evaluate_file(Some(&file), &[("key-a", 7)]),
-        Status::Invalid(Malformed)
+        LicenceStatus::Invalid(Malformed)
     );
 }
 
@@ -96,7 +96,7 @@ fn zero_cap_payload_is_malformed() {
     let file = file_signed_by(&payload, 7);
     assert_eq!(
         evaluate_file(Some(&file), &[("key-a", 7)]),
-        Status::Invalid(Malformed)
+        LicenceStatus::Invalid(Malformed)
     );
 }
 
@@ -108,7 +108,7 @@ fn newer_format_version_is_unsupported_even_with_unknown_fields() {
     let file = file_signed_by(&serde_json::to_vec(&json).unwrap(), 7);
     assert_eq!(
         evaluate_file(Some(&file), &[("key-a", 7)]),
-        Status::Invalid(UnsupportedFormatVersion)
+        LicenceStatus::Invalid(UnsupportedFormatVersion)
     );
 }
 
@@ -117,7 +117,7 @@ fn unknown_key_id_is_rejected() {
     let file = file_signed_by(&licence_for(THIS, "key-z").payload_bytes(), 7);
     assert_eq!(
         evaluate_file(Some(&file), &[("key-a", 7)]),
-        Status::Invalid(UnknownKeyId)
+        LicenceStatus::Invalid(UnknownKeyId)
     );
 }
 
@@ -136,7 +136,7 @@ fn tampered_payload_is_a_bad_signature() {
     };
     assert_eq!(
         evaluate_file(Some(&file), &[("key-a", 7)]),
-        Status::Invalid(BadSignature)
+        LicenceStatus::Invalid(BadSignature)
     );
 }
 
@@ -151,7 +151,7 @@ fn tampered_signature_is_a_bad_signature() {
     let file = encode_envelope(&payload, &sig);
     assert_eq!(
         evaluate_file(Some(&file), &[("key-a", 7)]),
-        Status::Invalid(BadSignature)
+        LicenceStatus::Invalid(BadSignature)
     );
 }
 
@@ -160,7 +160,7 @@ fn licence_for_another_instance_is_wrong_instance_id() {
     let file = file_signed_by(&licence_for(OTHER, "key-a").payload_bytes(), 7);
     assert_eq!(
         evaluate_file(Some(&file), &[("key-a", 7)]),
-        Status::Invalid(WrongInstanceId)
+        LicenceStatus::Invalid(WrongInstanceId)
     );
 }
 
@@ -172,15 +172,15 @@ fn key_rotation_accepts_either_trusted_key_and_rejects_a_third() {
     let by_c = file_signed_by(&licence_for(THIS, "key-c").payload_bytes(), 9);
     assert!(matches!(
         evaluate_file(Some(&by_a), &trust),
-        Status::Valid(_)
+        LicenceStatus::Valid(_)
     ));
     assert!(matches!(
         evaluate_file(Some(&by_b), &trust),
-        Status::Valid(_)
+        LicenceStatus::Valid(_)
     ));
     assert_eq!(
         evaluate_file(Some(&by_c), &trust),
-        Status::Invalid(UnknownKeyId)
+        LicenceStatus::Invalid(UnknownKeyId)
     );
 }
 
@@ -189,7 +189,7 @@ fn a_third_key_claiming_a_trusted_id_is_a_bad_signature() {
     let forged = file_signed_by(&licence_for(THIS, "key-a").payload_bytes(), 9);
     assert_eq!(
         evaluate_file(Some(&forged), &[("key-a", 7), ("key-b", 8)]),
-        Status::Invalid(BadSignature)
+        LicenceStatus::Invalid(BadSignature)
     );
 }
 
@@ -198,6 +198,6 @@ fn a_removed_key_gives_unknown_key_id() {
     let file = file_signed_by(&licence_for(THIS, "key-old").payload_bytes(), 9);
     assert_eq!(
         evaluate_file(Some(&file), &[("key-a", 7), ("key-b", 8)]),
-        Status::Invalid(UnknownKeyId)
+        LicenceStatus::Invalid(UnknownKeyId)
     );
 }

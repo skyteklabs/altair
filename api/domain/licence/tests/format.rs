@@ -19,7 +19,7 @@ fn sample() -> Licence {
         issued: date!(2026 - 10 - 08),
         expires: date!(2027 - 10 - 08),
         active_user_cap: 50,
-        features: vec!["investing".into()],
+        licensed_features: vec!["investing".into()],
         key_id: KeyId::new("key-1").unwrap(),
         format_version: FORMAT_VERSION,
     }
@@ -115,14 +115,14 @@ fn zero_active_user_cap_is_malformed() {
 #[test]
 fn empty_features_are_valid() {
     let mut licence = sample();
-    licence.features.clear();
+    licence.licensed_features.clear();
     assert!(parse_payload(&licence.payload_bytes()).is_ok());
 }
 
 #[test]
 fn unknown_feature_names_are_kept_not_rejected() {
     let mut licence = sample();
-    licence.features = vec!["future-feature".into()];
+    licence.licensed_features = vec!["future-feature".into()];
     assert!(parse_payload(&licence.payload_bytes()).is_ok());
 }
 

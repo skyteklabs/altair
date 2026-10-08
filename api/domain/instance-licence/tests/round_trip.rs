@@ -1,5 +1,5 @@
 use ed25519_dalek::{Signer as _, SigningKey};
-use instance_licence::{Status, evaluate};
+use instance_licence::{LicenceStatus, evaluate};
 use licence::{KeyId, LicenseeId};
 use licence_server::*;
 use std::cell::Cell;
@@ -53,7 +53,7 @@ fn a_licence_issued_by_the_licence_server_is_valid_on_the_instance() {
         &SeqIds(Cell::new(0)),
         &MemStore::default(),
         IssueRequest {
-            actor: Actor {
+            actor: StaffMember {
                 staff_id: "staff-1".into(),
                 role: StaffRole::Sales,
             },
@@ -65,7 +65,7 @@ fn a_licence_issued_by_the_licence_server_is_valid_on_the_instance() {
             instance_address: "bank.example".into(),
             expires: date!(2027 - 10 - 08),
             active_user_cap: 50,
-            features: vec!["investing".into()],
+            licensed_features: vec!["investing".into()],
         },
     ))
     .unwrap();
@@ -78,7 +78,7 @@ fn a_licence_issued_by_the_licence_server_is_valid_on_the_instance() {
         date!(2026 - 10 - 08),
     );
     match status {
-        Status::Valid(licence) => {
+        LicenceStatus::Valid(licence) => {
             assert_eq!(licence.licence_id, issued.licence_id);
             assert_eq!(licence.instance_id, issued.instance_id);
         }

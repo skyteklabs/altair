@@ -24,7 +24,7 @@ pub enum InstanceLicenceReason {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Status {
+pub enum LicenceStatus {
     Valid(Licence),
     Invalid(InstanceLicenceReason),
 }
@@ -38,35 +38,35 @@ pub fn evaluate(
     this_instance: InstanceId,
     trusted: &[(KeyId, VerifyingKey)],
     _today: Date,
-) -> Status {
+) -> LicenceStatus {
     use InstanceLicenceReason::*;
 
     let Some(file) = file else {
-        return Status::Invalid(NoLicence);
+        return LicenceStatus::Invalid(NoLicence);
     };
     let Ok(envelope) = read_envelope(file) else {
-        return Status::Invalid(Malformed);
+        return LicenceStatus::Invalid(Malformed);
     };
     let Ok(version) = read_format_version(&envelope.payload) else {
-        return Status::Invalid(Malformed);
+        return LicenceStatus::Invalid(Malformed);
     };
     if check_format_version(version).is_err() {
-        return Status::Invalid(UnsupportedFormatVersion);
+        return LicenceStatus::Invalid(UnsupportedFormatVersion);
     }
     let Ok(key_id) = read_key_id(&envelope.payload) else {
-        return Status::Invalid(Malformed);
+        return LicenceStatus::Invalid(Malformed);
     };
     let Ok(licence) = parse_payload(&envelope.payload) else {
-        return Status::Invalid(Malformed);
+        return LicenceStatus::Invalid(Malformed);
     };
     let Some((_, key)) = trusted.iter().find(|(id, _)| *id == key_id) else {
-        return Status::Invalid(UnknownKeyId);
+        return LicenceStatus::Invalid(UnknownKeyId);
     };
     if !verify_signature(&envelope.payload, &envelope.signature, key) {
-        return Status::Invalid(BadSignature);
+        return LicenceStatus::Invalid(BadSignature);
     }
     if licence.instance_id != this_instance {
-        return Status::Invalid(WrongInstanceId);
+        return LicenceStatus::Invalid(WrongInstanceId);
     }
-    Status::Valid(licence)
+    LicenceStatus::Valid(licence)
 }

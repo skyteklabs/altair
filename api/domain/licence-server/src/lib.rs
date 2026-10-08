@@ -20,7 +20,7 @@ pub enum StaffRole {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Actor {
+pub struct StaffMember {
     pub staff_id: String,
     pub role: StaffRole,
 }
@@ -78,7 +78,7 @@ pub trait LicenceStore {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Action {
+pub enum AuditAction {
     IssueLicence,
 }
 
@@ -87,15 +87,16 @@ pub enum Action {
 pub struct AuditEntry {
     pub staff_id: String,
     pub role: StaffRole,
-    pub action: Action,
+    pub action: AuditAction,
     pub at: OffsetDateTime,
     pub licensee_id: LicenseeId,
+    pub licensee_name: String,
     pub licence_id: LicenceId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IssueRequest {
-    pub actor: Actor,
+    pub actor: StaffMember,
     /// Time of the action. Its UTC date is the Licence's issue date.
     pub at: OffsetDateTime,
     pub licensee_id: LicenseeId,
@@ -103,7 +104,7 @@ pub struct IssueRequest {
     pub instance_address: String,
     pub expires: Date,
     pub active_user_cap: u32,
-    pub features: Vec<String>,
+    pub licensed_features: Vec<String>,
 }
 
 /// `bytes` is the Licence file exactly as signed (ADR-0013).
@@ -139,13 +140,13 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
     let licence = Licence {
         licence_id,
         licensee_id: req.licensee_id,
-        licensee_name: req.licensee_name,
+        licensee_name: req.licensee_name.clone(),
         instance_id,
         instance_address: req.instance_address,
         issued: req.at.to_offset(UtcOffset::UTC).date(),
         expires: req.expires,
         active_user_cap: req.active_user_cap,
-        features: req.features,
+        licensed_features: req.licensed_features,
         key_id: signer.key_id(),
         format_version: FORMAT_VERSION,
     };
@@ -157,9 +158,10 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
     let audit = AuditEntry {
         staff_id: req.actor.staff_id,
         role: req.actor.role,
-        action: Action::IssueLicence,
+        action: AuditAction::IssueLicence,
         at: req.at,
         licensee_id: licence.licensee_id,
+        licensee_name: licence.licensee_name.clone(),
         licence_id,
     };
     store

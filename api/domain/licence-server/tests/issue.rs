@@ -74,7 +74,7 @@ fn signer() -> TestSigner {
 
 fn request(role: StaffRole) -> IssueRequest {
     IssueRequest {
-        actor: Actor {
+        actor: StaffMember {
             staff_id: "staff-42".into(),
             role,
         },
@@ -86,7 +86,7 @@ fn request(role: StaffRole) -> IssueRequest {
         instance_address: "bank.example".into(),
         expires: date!(2027 - 10 - 08),
         active_user_cap: 50,
-        features: vec!["investing".into()],
+        licensed_features: vec!["investing".into()],
     }
 }
 
@@ -141,12 +141,13 @@ fn a_successful_issue_writes_exactly_one_audit_entry() {
     let (licence, audit) = &rows[0];
     assert_eq!(audit.staff_id, "staff-42");
     assert_eq!(audit.role, StaffRole::Sales);
-    assert_eq!(audit.action, Action::IssueLicence);
+    assert_eq!(audit.action, AuditAction::IssueLicence);
     assert_eq!(audit.at, datetime!(2026-10-08 23:30:00 -05:00));
     assert_eq!(
         audit.licensee_id,
         LicenseeId::from_uuid(Uuid::parse_str("66666666-7777-4888-8999-aaaaaaaaaaaa").unwrap())
     );
+    assert_eq!(audit.licensee_name, "Koperasi Maju");
     assert_eq!(audit.licence_id, issued.licence_id);
     assert_eq!(licence.licence_id, issued.licence_id);
 }

@@ -141,7 +141,7 @@ pub struct Licence {
     pub expires: Date,
     pub active_user_cap: u32,
     /// Open set: names an Instance does not know are ignored (ADR-0013).
-    pub features: Vec<String>,
+    pub licensed_features: Vec<String>,
     pub key_id: KeyId,
     pub format_version: u32,
 }
