@@ -63,7 +63,7 @@ The Palmy service run by Palmy itself, which Users reach through the store apps 
 _Avoid_: SaaS, hosted version, main server
 
 **Instance**:
-A Palmy service that a Licensee runs on its own servers at its own domain, with its own Users, who sign in through the Licensee's identity provider, and data that Palmy can never read. Every User on an Instance gets all Licensed features; Plans, Subscriptions and Promo codes do not exist there.
+Palmy as run by a Licensee on its own servers at its own Instance address, with its own Users, who sign in through the Licensee's identity provider, and data that Palmy can never read. Every User on an Instance gets all Licensed features; Plans, Subscriptions and Promo codes do not exist there.
 _Avoid_: Self-hosted server, deployment, installation, tenant
 
 **Licensee**:
@@ -75,7 +75,7 @@ A User of an Instance whom the Licensee's identity provider marks as an administ
 _Avoid_: Admin (a Staff role), operator, Licensee contact
 
 **Licence**:
-A document signed by Palmy that permits one Licensee to run one Instance, at one domain, until an expiry date, up to its Active User cap and with a set of Licensed features; it can be verified without contacting Palmy.
+A document signed by Palmy that permits one Licensee to run one Instance, at one Instance address, until an expiry date, up to its Active User cap and with a set of Licensed features; it can be verified without contacting Palmy.
 _Avoid_: License key, subscription, activation, serial
 
 **Active User**:
@@ -83,7 +83,7 @@ A User of an Instance who has signed in within the last 30 days; this is what th
 _Avoid_: Seat, licensed user, MAU
 
 **Active User cap**:
-The most Active Users a Licence allows its Instance to have.
+The most Active Users an Instance may have.
 _Avoid_: Seat limit, user limit, licence cap
 
 **Licensed feature**:
@@ -95,7 +95,7 @@ The domain of an Instance, set by its Licensee, which a User enters or scans in 
 _Avoid_: Server URL, endpoint, workspace
 
 **Check-in**:
-An Instance's optional, periodic report to Palmy for Licence renewal, revocation and usage counts; it never carries Ledger data.
+An Instance's optional, periodic report to Palmy for Licence renewal, revocation, usage counts and spotting Copied Instances; it never carries Ledger data.
 _Avoid_: Heartbeat, ping, phone-home, telemetry
 
 **Copied Instance**:
@@ -107,7 +107,7 @@ The 14 days after a Licence expires during which its Instance works normally but
 _Avoid_: Buffer, overdue period
 
 **Expired Instance**:
-An Instance whose Licence is missing, invalid, for another Instance or Instance address, revoked, or expired past its Grace period: all data stays readable, but nothing new can be recorded until a valid Licence is installed.
+An Instance with no valid Licence, as ADR-0011 defines it, including one revoked or expired past its Grace period: all data stays readable, but nothing new can be recorded until a valid Licence is installed.
 _Avoid_: Locked instance, disabled instance, unlicensed
 
 ### Not yet modelled
