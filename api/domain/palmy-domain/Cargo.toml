@@ -1,5 +1,5 @@
 [package]
-name = "altair-domain"
+name = "palmy-domain"
 version = "0.0.0"
 description = "Placeholder domain crate; proves the workspace builds and tests."
 edition.workspace = true
