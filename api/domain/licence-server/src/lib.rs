@@ -7,9 +7,10 @@
 #[cfg(feature = "test-support")]
 pub mod test_support;
 
+use ed25519_dalek::VerifyingKey;
 use licence::{
     ActiveUserCap, FORMAT_VERSION, InstanceId, KeyId, Licence, LicenceId, LicenseeId,
-    encode_envelope,
+    encode_envelope, verify_signature,
 };
 pub use licence::{InstanceAddress, LicenseeName};
 use std::fmt;
@@ -56,6 +57,25 @@ pub enum RuleViolation {
     InstanceAddressEmpty,
 }
 
+impl fmt::Display for RuleViolation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            RuleViolation::OnlySalesOrAdminMayIssue { role } => write!(
+                f,
+                "only Sales or Admin may issue a Licence; this Staff member is {role:?}"
+            ),
+            RuleViolation::ActiveUserCapMustBePositive => {
+                f.write_str("the Active User cap must be at least 1")
+            }
+            RuleViolation::ExpiryBeforeIssue => {
+                f.write_str("the expiry date is before the issue date")
+            }
+            RuleViolation::LicenseeNameEmpty => f.write_str("the Licensee name is empty"),
+            RuleViolation::InstanceAddressEmpty => f.write_str("the Instance address is empty"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SignerError(pub String);
 
@@ -67,14 +87,22 @@ pub enum IssueError {
     Rule(RuleViolation),
     Signer(SignerError),
     Store(StoreError),
+    /// The `IdSource` gave a UUID that is not v4.
+    IdNotV4(Uuid),
+    /// The signature does not verify with the Signer's `verifying_key`.
+    SignatureDoesNotVerify,
 }
 
 impl fmt::Display for IssueError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            IssueError::Rule(rule) => write!(f, "rule violation: {rule:?}"),
+            IssueError::Rule(rule) => write!(f, "rule violation: {rule}"),
             IssueError::Signer(SignerError(e)) => write!(f, "signer failed: {e}"),
             IssueError::Store(StoreError(e)) => write!(f, "store failed: {e}"),
+            IssueError::IdNotV4(id) => write!(f, "id source gave a non-v4 UUID: {id}"),
+            IssueError::SignatureDoesNotVerify => {
+                f.write_str("signature does not verify with the signer's key")
+            }
         }
     }
 }
@@ -84,10 +112,13 @@ impl std::error::Error for IssueError {}
 /// Signs payload bytes with the Licence signing key.
 pub trait Signer {
     fn key_id(&self) -> KeyId;
+    /// The public half of the key named by `key_id`, as Instances trust it.
+    fn verifying_key(&self) -> VerifyingKey;
     fn sign(&self, payload: &[u8]) -> impl Future<Output = Result<Vec<u8>, SignerError>> + Send;
 }
 
-/// Produces fresh UUIDs for Instance and Licence IDs.
+/// Produces fresh UUIDv4s for Instance and Licence IDs. `issue` refuses any
+/// other version, since an Instance cannot read it back.
 pub trait IdSource {
     fn next_id(&self) -> Uuid;
 }
@@ -124,8 +155,8 @@ pub struct IssueRequest {
     /// Time of the action. Its UTC date is the Licence's issue date.
     pub at: OffsetDateTime,
     pub licensee_id: LicenseeId,
-    pub licensee_name: LicenseeName,
-    pub instance_address: InstanceAddress,
+    pub licensee_name: String,
+    pub instance_address: String,
     pub expires: Date,
     pub active_user_cap: u32,
     pub licensed_features: Vec<String>,
@@ -140,7 +171,8 @@ pub struct IssuedLicence {
 }
 
 /// Issues a Licence. Sales and Admin only. Nothing is stored or signed if a
-/// rule fails, and nothing is stored if signing fails.
+/// rule fails, and nothing is stored if signing fails or the signature does
+/// not verify with the Signer's `verifying_key`.
 pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
     signer: &S,
     ids: &I,
@@ -157,25 +189,25 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
     }
     let active_user_cap = ActiveUserCap::new(req.active_user_cap)
         .ok_or(IssueError::Rule(RuleViolation::ActiveUserCapMustBePositive))?;
-    if req.licensee_name.as_str().trim().is_empty() {
-        return Err(IssueError::Rule(RuleViolation::LicenseeNameEmpty));
-    }
-    if req.instance_address.as_str().trim().is_empty() {
-        return Err(IssueError::Rule(RuleViolation::InstanceAddressEmpty));
-    }
+    let licensee_name = LicenseeName::new(req.licensee_name)
+        .ok_or(IssueError::Rule(RuleViolation::LicenseeNameEmpty))?;
+    let instance_address = InstanceAddress::new(req.instance_address)
+        .ok_or(IssueError::Rule(RuleViolation::InstanceAddressEmpty))?;
     let issued = req.at.to_offset(UtcOffset::UTC).date();
     if req.expires < issued {
         return Err(IssueError::Rule(RuleViolation::ExpiryBeforeIssue));
     }
 
-    let instance_id = InstanceId::from_uuid(ids.next_id());
-    let licence_id = LicenceId::from_uuid(ids.next_id());
+    let id = ids.next_id();
+    let instance_id = InstanceId::from_uuid(id).ok_or(IssueError::IdNotV4(id))?;
+    let id = ids.next_id();
+    let licence_id = LicenceId::from_uuid(id).ok_or(IssueError::IdNotV4(id))?;
     let licence = Licence {
         licence_id,
         licensee_id: req.licensee_id,
-        licensee_name: req.licensee_name.clone(),
+        licensee_name: licensee_name.clone(),
         instance_id,
-        instance_address: req.instance_address,
+        instance_address,
         issued,
         expires: req.expires,
         active_user_cap,
@@ -186,6 +218,9 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
 
     let payload = licence.payload_bytes();
     let signature = signer.sign(&payload).await.map_err(IssueError::Signer)?;
+    if !verify_signature(&payload, &signature, &signer.verifying_key()) {
+        return Err(IssueError::SignatureDoesNotVerify);
+    }
     let bytes = encode_envelope(&payload, &signature);
 
     let audit = AuditEntry {
@@ -194,7 +229,7 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
         action: AuditAction::IssueLicence,
         at: req.at,
         licensee_id: licence.licensee_id,
-        licensee_name: req.licensee_name,
+        licensee_name,
         licence_id,
     };
     store

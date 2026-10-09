@@ -2,6 +2,7 @@ use ed25519_dalek::{SigningKey, VerifyingKey};
 use licence::{LicenseeId, parse_payload, read_envelope, verify_signature};
 use licence_server::test_support::{MemStore, SeqIds, TestSigner};
 use licence_server::*;
+use std::future::Future;
 use time::macros::{date, datetime};
 use uuid::Uuid;
 
@@ -21,9 +22,10 @@ fn request(role: StaffRole) -> IssueRequest {
         at: datetime!(2026-10-08 23:30:00 -05:00),
         licensee_id: LicenseeId::from_uuid(
             Uuid::parse_str("66666666-7777-4888-8999-aaaaaaaaaaaa").unwrap(),
-        ),
-        licensee_name: LicenseeName::new("Koperasi Maju"),
-        instance_address: InstanceAddress::new("bank.example"),
+        )
+        .unwrap(),
+        licensee_name: "Koperasi Maju".into(),
+        instance_address: "bank.example".into(),
         expires: date!(2027 - 10 - 08),
         active_user_cap: 50,
         licensed_features: vec!["investing".into()],
@@ -86,8 +88,9 @@ fn a_successful_issue_writes_exactly_one_audit_entry() {
     assert_eq!(
         audit.licensee_id,
         LicenseeId::from_uuid(Uuid::parse_str("66666666-7777-4888-8999-aaaaaaaaaaaa").unwrap())
+            .unwrap()
     );
-    assert_eq!(audit.licensee_name, LicenseeName::new("Koperasi Maju"));
+    assert_eq!(audit.licensee_name.as_str(), "Koperasi Maju");
     assert_eq!(audit.licence_id, issued.licence_id);
     assert_eq!(licence.licence_id, issued.licence_id);
 }
@@ -174,7 +177,7 @@ fn an_expiry_on_the_issue_date_is_allowed() {
 fn an_empty_licensee_name_is_refused() {
     let store = MemStore::default();
     let mut req = request(StaffRole::Sales);
-    req.licensee_name = LicenseeName::new("   ");
+    req.licensee_name = "   ".into();
     assert_eq!(
         run(&signer(), &store, req),
         Err(IssueError::Rule(RuleViolation::LicenseeNameEmpty))
@@ -186,10 +189,109 @@ fn an_empty_licensee_name_is_refused() {
 fn an_empty_instance_address_is_refused() {
     let store = MemStore::default();
     let mut req = request(StaffRole::Sales);
-    req.instance_address = InstanceAddress::new("");
+    req.instance_address = String::new();
     assert_eq!(
         run(&signer(), &store, req),
         Err(IssueError::Rule(RuleViolation::InstanceAddressEmpty))
     );
     assert!(store.rows.lock().unwrap().is_empty());
+}
+
+/// UUIDv7 IDs, as `Uuid::now_v7` would give.
+struct V7Ids;
+
+impl IdSource for V7Ids {
+    fn next_id(&self) -> Uuid {
+        uuid::Builder::from_random_bytes([9u8; 16])
+            .with_version(uuid::Version::SortRand)
+            .into_uuid()
+    }
+}
+
+#[test]
+fn a_non_v4_id_source_issues_nothing() {
+    let store = MemStore::default();
+    let id = V7Ids.next_id();
+    assert_eq!(
+        pollster::block_on(issue(&signer(), &V7Ids, &store, request(StaffRole::Sales))),
+        Err(IssueError::IdNotV4(id))
+    );
+    assert!(store.rows.lock().unwrap().is_empty());
+}
+
+/// Signs with one key but reports another, like a KMS key that does not
+/// match the configured verifying key.
+struct MismatchedSigner {
+    signs_with: SigningKey,
+    reports: SigningKey,
+}
+
+impl Signer for MismatchedSigner {
+    fn key_id(&self) -> licence::KeyId {
+        licence::KeyId::new("key-1").unwrap()
+    }
+
+    fn verifying_key(&self) -> VerifyingKey {
+        self.reports.verifying_key()
+    }
+
+    fn sign(&self, payload: &[u8]) -> impl Future<Output = Result<Vec<u8>, SignerError>> + Send {
+        use ed25519_dalek::Signer as _;
+        let signature = self.signs_with.sign(payload).to_bytes().to_vec();
+        async move { Ok(signature) }
+    }
+}
+
+#[test]
+fn a_signature_that_does_not_verify_is_not_stored() {
+    let store = MemStore::default();
+    let signer = MismatchedSigner {
+        signs_with: SigningKey::from_bytes(&[8u8; 32]),
+        reports: SigningKey::from_bytes(&[7u8; 32]),
+    };
+    assert_eq!(
+        pollster::block_on(issue(
+            &signer,
+            &SeqIds::new(),
+            &store,
+            request(StaffRole::Sales)
+        )),
+        Err(IssueError::SignatureDoesNotVerify)
+    );
+    assert!(store.rows.lock().unwrap().is_empty());
+}
+
+#[test]
+fn rule_violations_display_in_glossary_words() {
+    let cases = [
+        (
+            RuleViolation::OnlySalesOrAdminMayIssue {
+                role: StaffRole::Support,
+            },
+            "only Sales or Admin may issue a Licence; this Staff member is Support",
+        ),
+        (
+            RuleViolation::ActiveUserCapMustBePositive,
+            "the Active User cap must be at least 1",
+        ),
+        (
+            RuleViolation::ExpiryBeforeIssue,
+            "the expiry date is before the issue date",
+        ),
+        (
+            RuleViolation::LicenseeNameEmpty,
+            "the Licensee name is empty",
+        ),
+        (
+            RuleViolation::InstanceAddressEmpty,
+            "the Instance address is empty",
+        ),
+    ];
+    for (rule, text) in cases {
+        assert_eq!(rule.to_string(), text);
+        assert_eq!(
+            IssueError::Rule(rule).to_string(),
+            format!("rule violation: {text}")
+        );
+    }
 }

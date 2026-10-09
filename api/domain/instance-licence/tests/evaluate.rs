@@ -20,11 +20,11 @@ fn trusted(entries: &[(&str, u8)]) -> Vec<(KeyId, VerifyingKey)> {
 
 fn licence_for(instance: &str, key_id: &str) -> Licence {
     Licence {
-        licence_id: LicenceId::from_uuid(uuid!("11111111-2222-4333-8444-555555555555")),
-        licensee_id: LicenseeId::from_uuid(uuid!("66666666-7777-4888-8999-aaaaaaaaaaaa")),
-        licensee_name: LicenseeName::new("Koperasi Maju"),
+        licence_id: LicenceId::from_uuid(uuid!("11111111-2222-4333-8444-555555555555")).unwrap(),
+        licensee_id: LicenseeId::from_uuid(uuid!("66666666-7777-4888-8999-aaaaaaaaaaaa")).unwrap(),
+        licensee_name: LicenseeName::new("Koperasi Maju").unwrap(),
         instance_id: InstanceId::parse(instance).unwrap(),
-        instance_address: InstanceAddress::new("bank.example"),
+        instance_address: InstanceAddress::new("bank.example").unwrap(),
         issued: date!(2026 - 10 - 08),
         expires: date!(2027 - 10 - 08),
         active_user_cap: ActiveUserCap::new(50).unwrap(),

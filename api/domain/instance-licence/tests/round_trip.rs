@@ -21,9 +21,10 @@ fn a_licence_issued_by_the_licence_server_is_valid_on_the_instance() {
             at: datetime!(2026-10-08 09:00:00 UTC),
             licensee_id: LicenseeId::from_uuid(
                 Uuid::parse_str("66666666-7777-4888-8999-aaaaaaaaaaaa").unwrap(),
-            ),
-            licensee_name: LicenseeName::new("Koperasi Maju"),
-            instance_address: InstanceAddress::new("bank.example"),
+            )
+            .unwrap(),
+            licensee_name: "Koperasi Maju".into(),
+            instance_address: "bank.example".into(),
             expires: date!(2027 - 10 - 08),
             active_user_cap: 50,
             licensed_features: vec!["investing".into()],

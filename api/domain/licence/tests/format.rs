@@ -11,11 +11,11 @@ fn key() -> SigningKey {
 
 fn sample() -> Licence {
     Licence {
-        licence_id: LicenceId::from_uuid(uuid!("11111111-2222-4333-8444-555555555555")),
-        licensee_id: LicenseeId::from_uuid(uuid!("66666666-7777-4888-8999-aaaaaaaaaaaa")),
-        licensee_name: LicenseeName::new("Koperasi Maju"),
+        licence_id: LicenceId::from_uuid(uuid!("11111111-2222-4333-8444-555555555555")).unwrap(),
+        licensee_id: LicenseeId::from_uuid(uuid!("66666666-7777-4888-8999-aaaaaaaaaaaa")).unwrap(),
+        licensee_name: LicenseeName::new("Koperasi Maju").unwrap(),
         instance_id: InstanceId::parse(INSTANCE).unwrap(),
-        instance_address: InstanceAddress::new("bank.example"),
+        instance_address: InstanceAddress::new("bank.example").unwrap(),
         issued: date!(2026 - 10 - 08),
         expires: date!(2027 - 10 - 08),
         active_user_cap: ActiveUserCap::new(50).unwrap(),
@@ -151,4 +151,37 @@ fn key_id_is_read_from_the_payload() {
 #[test]
 fn non_json_envelope_is_malformed() {
     assert_eq!(read_envelope(b"not json"), Err(FormatError::Malformed));
+}
+
+#[test]
+fn ids_are_built_from_uuidv4_only() {
+    let v4 = uuid!("11111111-2222-4333-8444-555555555555");
+    let v7 = uuid!("01890a5d-ac96-774b-bcce-b302099a8057");
+    assert!(LicenceId::from_uuid(v4).is_some());
+    assert_eq!(LicenceId::from_uuid(v7), None);
+    assert_eq!(InstanceId::from_uuid(v7), None);
+    assert_eq!(LicenseeId::from_uuid(v7), None);
+}
+
+#[test]
+fn blank_licensee_name_or_instance_address_in_a_payload_is_malformed() {
+    let payload = String::from_utf8(sample().payload_bytes()).unwrap();
+    for blank in [
+        payload.replace("\"Koperasi Maju\"", "\"   \""),
+        payload.replace("\"bank.example\"", "\"\""),
+    ] {
+        assert_eq!(
+            parse_payload(blank.as_bytes()),
+            Err(FormatError::Malformed),
+            "{blank}"
+        );
+    }
+}
+
+#[test]
+fn blank_licensee_name_or_instance_address_is_refused_by_the_type() {
+    for blank in ["", "   ", "\t\n"] {
+        assert_eq!(LicenseeName::new(blank), None, "{blank:?}");
+        assert_eq!(InstanceAddress::new(blank), None, "{blank:?}");
+    }
 }

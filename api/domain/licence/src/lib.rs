@@ -42,18 +42,18 @@ macro_rules! uuid_id {
         pub struct $name(uuid::Uuid);
 
         impl $name {
-            pub fn from_uuid(uuid: uuid::Uuid) -> Self {
-                Self(uuid)
+            /// UUIDv4 only, the same rule `parse` applies, so every ID that
+            /// can be built can also be read back from a Licence.
+            pub fn from_uuid(uuid: uuid::Uuid) -> Option<Self> {
+                (uuid.get_version_num() == 4).then_some(Self(uuid))
             }
 
             /// Parses the canonical form only: lowercase, hyphenated.
             pub fn parse(s: &str) -> Result<Self, FormatError> {
                 let uuid = uuid::Uuid::parse_str(s).map_err(|_| FormatError::Malformed)?;
-                let parsed = Self(uuid);
-                if uuid.get_version_num() == 4 && parsed.to_string() == s {
-                    Ok(parsed)
-                } else {
-                    Err(FormatError::Malformed)
+                match Self::from_uuid(uuid) {
+                    Some(parsed) if parsed.to_string() == s => Ok(parsed),
+                    _ => Err(FormatError::Malformed),
                 }
             }
         }
@@ -156,35 +156,49 @@ impl From<ActiveUserCap> for u32 {
     }
 }
 
-/// The Licensee's name as written on the Licence.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct LicenseeName(String);
+macro_rules! non_blank_text {
+    ($(#[$doc:meta])* $name:ident) => {
+        $(#[$doc])*
+        /// Never empty or whitespace-only. The only constructor is `new`, so
+        /// the rule lives here; on the wire it is a plain string.
+        #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+        #[serde(try_from = "String", into = "String")]
+        pub struct $name(String);
 
-impl LicenseeName {
-    pub fn new(name: impl Into<String>) -> Self {
-        Self(name.into())
-    }
+        impl $name {
+            pub fn new(text: impl Into<String>) -> Option<Self> {
+                let text = text.into();
+                (!text.trim().is_empty()).then_some(Self(text))
+            }
 
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
+            pub fn as_str(&self) -> &str {
+                &self.0
+            }
+        }
+
+        impl TryFrom<String> for $name {
+            type Error = FormatError;
+            fn try_from(text: String) -> Result<Self, FormatError> {
+                Self::new(text).ok_or(FormatError::Malformed)
+            }
+        }
+
+        impl From<$name> for String {
+            fn from(text: $name) -> String {
+                text.0
+            }
+        }
+    };
 }
 
-/// The address the licensed Instance is reached at.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct InstanceAddress(String);
-
-impl InstanceAddress {
-    pub fn new(address: impl Into<String>) -> Self {
-        Self(address.into())
-    }
-
-    pub fn as_str(&self) -> &str {
-        &self.0
-    }
-}
+non_blank_text!(
+    /// The Licensee's name as written on the Licence.
+    LicenseeName
+);
+non_blank_text!(
+    /// The address the licensed Instance is reached at.
+    InstanceAddress
+);
 
 /// The signed content of a Licence. Unknown fields are rejected.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

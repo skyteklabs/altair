@@ -2,7 +2,7 @@
 //! `test-support` feature, so no production build carries them.
 
 use crate::{AuditEntry, IdSource, LicenceStore, Signer, SignerError, StoreError};
-use ed25519_dalek::{Signer as _, SigningKey};
+use ed25519_dalek::{Signer as _, SigningKey, VerifyingKey};
 use licence::{KeyId, Licence};
 use std::cell::Cell;
 use std::future::Future;
@@ -28,6 +28,10 @@ impl TestSigner {
 impl Signer for TestSigner {
     fn key_id(&self) -> KeyId {
         KeyId::new("key-1").unwrap()
+    }
+
+    fn verifying_key(&self) -> VerifyingKey {
+        self.key.verifying_key()
     }
 
     fn sign(&self, payload: &[u8]) -> impl Future<Output = Result<Vec<u8>, SignerError>> + Send {
