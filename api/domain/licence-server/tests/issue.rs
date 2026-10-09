@@ -22,8 +22,8 @@ fn request(role: StaffRole) -> IssueRequest {
         licensee_id: LicenseeId::from_uuid(
             Uuid::parse_str("66666666-7777-4888-8999-aaaaaaaaaaaa").unwrap(),
         ),
-        licensee_name: "Koperasi Maju".into(),
-        instance_address: "bank.example".into(),
+        licensee_name: LicenseeName::new("Koperasi Maju"),
+        instance_address: InstanceAddress::new("bank.example"),
         expires: date!(2027 - 10 - 08),
         active_user_cap: 50,
         licensed_features: vec!["investing".into()],
@@ -87,7 +87,7 @@ fn a_successful_issue_writes_exactly_one_audit_entry() {
         audit.licensee_id,
         LicenseeId::from_uuid(Uuid::parse_str("66666666-7777-4888-8999-aaaaaaaaaaaa").unwrap())
     );
-    assert_eq!(audit.licensee_name, "Koperasi Maju");
+    assert_eq!(audit.licensee_name, LicenseeName::new("Koperasi Maju"));
     assert_eq!(audit.licence_id, issued.licence_id);
     assert_eq!(licence.licence_id, issued.licence_id);
 }
@@ -174,7 +174,7 @@ fn an_expiry_on_the_issue_date_is_allowed() {
 fn an_empty_licensee_name_is_refused() {
     let store = MemStore::default();
     let mut req = request(StaffRole::Sales);
-    req.licensee_name = "   ".into();
+    req.licensee_name = LicenseeName::new("   ");
     assert_eq!(
         run(&signer(), &store, req),
         Err(IssueError::Rule(RuleViolation::LicenseeNameEmpty))
@@ -186,7 +186,7 @@ fn an_empty_licensee_name_is_refused() {
 fn an_empty_instance_address_is_refused() {
     let store = MemStore::default();
     let mut req = request(StaffRole::Sales);
-    req.instance_address = String::new();
+    req.instance_address = InstanceAddress::new("");
     assert_eq!(
         run(&signer(), &store, req),
         Err(IssueError::Rule(RuleViolation::InstanceAddressEmpty))

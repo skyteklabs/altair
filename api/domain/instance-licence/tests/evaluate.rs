@@ -22,9 +22,9 @@ fn licence_for(instance: &str, key_id: &str) -> Licence {
     Licence {
         licence_id: LicenceId::from_uuid(uuid!("11111111-2222-4333-8444-555555555555")),
         licensee_id: LicenseeId::from_uuid(uuid!("66666666-7777-4888-8999-aaaaaaaaaaaa")),
-        licensee_name: "Koperasi Maju".into(),
+        licensee_name: LicenseeName::new("Koperasi Maju"),
         instance_id: InstanceId::parse(instance).unwrap(),
-        instance_address: "bank.example".into(),
+        instance_address: InstanceAddress::new("bank.example"),
         issued: date!(2026 - 10 - 08),
         expires: date!(2027 - 10 - 08),
         active_user_cap: ActiveUserCap::new(50).unwrap(),

@@ -11,6 +11,7 @@ use licence::{
     ActiveUserCap, FORMAT_VERSION, InstanceId, KeyId, Licence, LicenceId, LicenseeId,
     encode_envelope,
 };
+pub use licence::{InstanceAddress, LicenseeName};
 use std::fmt;
 use std::future::Future;
 use time::{Date, OffsetDateTime, UtcOffset};
@@ -113,7 +114,7 @@ pub struct AuditEntry {
     pub action: AuditAction,
     pub at: OffsetDateTime,
     pub licensee_id: LicenseeId,
-    pub licensee_name: String,
+    pub licensee_name: LicenseeName,
     pub licence_id: LicenceId,
 }
 
@@ -123,8 +124,8 @@ pub struct IssueRequest {
     /// Time of the action. Its UTC date is the Licence's issue date.
     pub at: OffsetDateTime,
     pub licensee_id: LicenseeId,
-    pub licensee_name: String,
-    pub instance_address: String,
+    pub licensee_name: LicenseeName,
+    pub instance_address: InstanceAddress,
     pub expires: Date,
     pub active_user_cap: u32,
     pub licensed_features: Vec<String>,
@@ -156,10 +157,10 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
     }
     let active_user_cap = ActiveUserCap::new(req.active_user_cap)
         .ok_or(IssueError::Rule(RuleViolation::ActiveUserCapMustBePositive))?;
-    if req.licensee_name.trim().is_empty() {
+    if req.licensee_name.as_str().trim().is_empty() {
         return Err(IssueError::Rule(RuleViolation::LicenseeNameEmpty));
     }
-    if req.instance_address.trim().is_empty() {
+    if req.instance_address.as_str().trim().is_empty() {
         return Err(IssueError::Rule(RuleViolation::InstanceAddressEmpty));
     }
     let issued = req.at.to_offset(UtcOffset::UTC).date();
@@ -193,7 +194,7 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
         action: AuditAction::IssueLicence,
         at: req.at,
         licensee_id: licence.licensee_id,
-        licensee_name: licence.licensee_name.clone(),
+        licensee_name: req.licensee_name,
         licence_id,
     };
     store

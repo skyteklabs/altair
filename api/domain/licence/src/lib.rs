@@ -156,16 +156,46 @@ impl From<ActiveUserCap> for u32 {
     }
 }
 
+/// The Licensee's name as written on the Licence.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct LicenseeName(String);
+
+impl LicenseeName {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self(name.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+/// The address the licensed Instance is reached at.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct InstanceAddress(String);
+
+impl InstanceAddress {
+    pub fn new(address: impl Into<String>) -> Self {
+        Self(address.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
 /// The signed content of a Licence. Unknown fields are rejected.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Licence {
     pub licence_id: LicenceId,
     pub licensee_id: LicenseeId,
-    pub licensee_name: String,
+    pub licensee_name: LicenseeName,
     pub instance_id: InstanceId,
     /// The Instance address the Licensee configures (ADR-0011).
-    pub instance_address: String,
+    pub instance_address: InstanceAddress,
     #[serde(with = "calendar_date")]
     pub issued: Date,
     #[serde(with = "calendar_date")]
