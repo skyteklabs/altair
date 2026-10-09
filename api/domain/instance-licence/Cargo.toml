@@ -1,0 +1,19 @@
+[package]
+name = "instance-licence"
+version = "0.0.0"
+description = "Instance-side Licence evaluation: Valid or Invalid(reason)."
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+licence = { path = "../licence" }
+ed25519-dalek = "2"
+time = { version = "0.3", default-features = false }
+
+[dev-dependencies]
+licence-server = { path = "../licence-server", features = ["test-support"] }
+pollster = "0.4"
+uuid = { version = "1", default-features = false }
+serde_json = "1"
+time = { version = "0.3", default-features = false, features = ["macros"] }
