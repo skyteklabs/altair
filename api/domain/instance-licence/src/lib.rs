@@ -2,8 +2,10 @@
 //!
 //! Checks run in a fixed order, and each `Invalid` reason has one trigger:
 //! no file, envelope shape, format version, strict parse, key ID, signature,
-//! Instance ID. The term check comes in SKY-6, so `today` is accepted now and
-//! not yet used.
+//! Instance ID. Only then is the Licence term checked against `today`
+//! (ADR-0010): expiry is the end of the expiry date, the next
+//! [`GRACE_PERIOD_DAYS`] are the Grace period, and after that the Instance is
+//! an Expired Instance. Every date comes in as an input; nothing reads a clock.
 
 use ed25519_dalek::VerifyingKey;
 use licence::{
@@ -23,21 +25,89 @@ pub enum InstanceLicenceReason {
     WrongInstanceId,
 }
 
+/// Days after the expiry date during which writes still work (ADR-0010).
+pub const GRACE_PERIOD_DAYS: i64 = 14;
+
+/// Days before expiry on which Instance administrators are warned (ADR-0010).
+pub const EXPIRY_WARNING_DAYS: [i64; 3] = [30, 14, 7];
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LicenceStatus {
     Valid(Licence),
+    /// Past expiry but within the Grace period: writes still work.
+    GracePeriod(Licence),
+    /// Past the Grace period: an Expired Instance, read-only.
+    Expired(Licence),
+    /// No valid Licence: an Expired Instance, read-only (ADR-0011).
     Invalid(InstanceLicenceReason),
+}
+
+/// What the Instance shows its Instance administrators on a given day.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Notice {
+    ExpiryWarning { days_left: i64 },
+    GracePeriodBanner,
+}
+
+impl LicenceStatus {
+    /// Whether the Instance may record anything new. No status ever hides or
+    /// deletes data; the rest only make the Instance read-only.
+    pub fn may_write(&self) -> bool {
+        matches!(
+            self,
+            LicenceStatus::Valid(_) | LicenceStatus::GracePeriod(_)
+        )
+    }
+
+    /// The notice due on `today`. Worked out from the Licence's own term, so
+    /// it stays right even if `today` differs from the day of evaluation.
+    pub fn notice_due(&self, today: Date) -> Option<Notice> {
+        let (LicenceStatus::Valid(licence)
+        | LicenceStatus::GracePeriod(licence)
+        | LicenceStatus::Expired(licence)) = self
+        else {
+            return None;
+        };
+        match term(licence, today) {
+            Term::Running { days_left } => EXPIRY_WARNING_DAYS
+                .contains(&days_left)
+                .then_some(Notice::ExpiryWarning { days_left }),
+            Term::GracePeriod => Some(Notice::GracePeriodBanner),
+            Term::Over => None,
+        }
+    }
+}
+
+/// Where `today` falls in a Licence's term. The one place the expiry and
+/// Grace period boundaries are drawn.
+enum Term {
+    /// On or before the expiry date: the Licence runs to the end of that day.
+    Running {
+        days_left: i64,
+    },
+    GracePeriod,
+    Over,
+}
+
+fn term(licence: &Licence, today: Date) -> Term {
+    match (today - licence.expires).whole_days() {
+        days_past @ ..=0 => Term::Running {
+            days_left: -days_past,
+        },
+        1..=GRACE_PERIOD_DAYS => Term::GracePeriod,
+        _ => Term::Over,
+    }
 }
 
 /// Evaluates an installed Licence file for this Instance.
 ///
 /// `trusted` is the set of public keys this build accepts, by key ID.
-/// `_today` is unused until SKY-6 adds the term and expiry checks.
+/// `today` is the Instance's current date; the caller supplies it.
 pub fn evaluate(
     file: Option<&[u8]>,
     this_instance: InstanceId,
     trusted: &[(KeyId, VerifyingKey)],
-    _today: Date,
+    today: Date,
 ) -> LicenceStatus {
     use InstanceLicenceReason::*;
 
@@ -68,5 +138,9 @@ pub fn evaluate(
     if licence.instance_id != this_instance {
         return LicenceStatus::Invalid(WrongInstanceId);
     }
-    LicenceStatus::Valid(licence)
+    match term(&licence, today) {
+        Term::Running { .. } => LicenceStatus::Valid(licence),
+        Term::GracePeriod => LicenceStatus::GracePeriod(licence),
+        Term::Over => LicenceStatus::Expired(licence),
+    }
 }
