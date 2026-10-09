@@ -112,7 +112,10 @@ impl std::error::Error for IssueError {}
 /// Signs payload bytes with the Licence signing key.
 pub trait Signer {
     fn key_id(&self) -> KeyId;
-    /// The public half of the key named by `key_id`, as Instances trust it.
+    /// The key Instances trust for `key_id`, taken from the trusted-keys config
+    /// they are built with. Never fetch it from the signing backend: its own
+    /// public key always verifies its own signature, so `issue` would no longer
+    /// catch a backend key that does not match `key_id`.
     fn verifying_key(&self) -> VerifyingKey;
     fn sign(&self, payload: &[u8]) -> impl Future<Output = Result<Vec<u8>, SignerError>> + Send;
 }
