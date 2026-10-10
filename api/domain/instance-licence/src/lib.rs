@@ -36,9 +36,9 @@ pub enum InstanceLicenceReason {
 pub enum SignInRefusal {
     /// The Instance is at its Active User cap and this User is not an Active User.
     ActiveUserCapReached,
-    /// The Licence is `Invalid`, so there is no Active User cap to admit
-    /// anyone new under.
-    InvalidLicence,
+    /// The Instance is an Expired Instance, so there is no Active User cap to
+    /// admit anyone new under (ADR-0011).
+    ExpiredInstance,
 }
 
 /// Days after the expiry date during which writes still work (ADR-0010).
@@ -93,17 +93,18 @@ impl LicenceStatus {
     }
 
     /// Whether the Licence switches on the Licensed feature named `feature`.
-    /// A Licence past its Grace period keeps its Licensed features, so nothing
-    /// it unlocked is hidden; an `Invalid` Licence licenses no feature.
+    /// On an Expired Instance no feature is licensed; Licensed features gate
+    /// recording only, so this hides nothing (ADR-0011).
     pub fn is_feature_licensed(&self, feature: &str) -> bool {
-        self.licence()
+        self.licence_in_force()
             .is_some_and(|licence| licence.licensed_features.iter().any(|f| f == feature))
     }
 
     /// Whether a User may sign in, given the current Active User count and
     /// whether this User is an Active User (signed in within the last 30
     /// days). An Active User always may; anyone else only while the count is
-    /// below the Active User cap (ADR-0011).
+    /// below the Active User cap. On an Expired Instance only Active Users
+    /// may (ADR-0011).
     pub fn may_sign_in(
         &self,
         active_user_count: u32,
@@ -112,7 +113,9 @@ impl LicenceStatus {
         if is_active_user {
             return Ok(());
         }
-        let licence = self.licence().ok_or(SignInRefusal::InvalidLicence)?;
+        let licence = self
+            .licence_in_force()
+            .ok_or(SignInRefusal::ExpiredInstance)?;
         if active_user_count < licence.active_user_cap.get() {
             Ok(())
         } else {
@@ -121,9 +124,10 @@ impl LicenceStatus {
     }
 
     /// Whether the Active User cap warning is due: once the Active User count
-    /// reaches [`ACTIVE_USER_CAP_WARNING_PERCENT`] of the cap.
+    /// reaches [`ACTIVE_USER_CAP_WARNING_PERCENT`] of the cap. Never on an
+    /// Expired Instance, where the cap does not apply.
     pub fn cap_warning_due(&self, active_user_count: u32) -> bool {
-        self.licence().is_some_and(|licence| {
+        self.licence_in_force().is_some_and(|licence| {
             u64::from(active_user_count) * 100
                 >= u64::from(licence.active_user_cap.get()) * ACTIVE_USER_CAP_WARNING_PERCENT
         })
@@ -135,6 +139,15 @@ impl LicenceStatus {
             | LicenceStatus::GracePeriod(licence)
             | LicenceStatus::Expired(licence) => Some(licence),
             LicenceStatus::Invalid(_) => None,
+        }
+    }
+
+    /// The Licence whose Active User cap and Licensed features apply. None on
+    /// an Expired Instance, whatever made it one (ADR-0011).
+    fn licence_in_force(&self) -> Option<&Licence> {
+        match self {
+            LicenceStatus::Valid(licence) | LicenceStatus::GracePeriod(licence) => Some(licence),
+            LicenceStatus::Expired(_) | LicenceStatus::Invalid(_) => None,
         }
     }
 }

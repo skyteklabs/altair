@@ -97,8 +97,8 @@ fn a_feature_not_in_the_licence_is_not_licensed() {
 }
 
 #[test]
-fn an_expired_instance_keeps_its_licensed_features() {
-    assert!(expired().is_feature_licensed("investing"));
+fn an_expired_instance_licenses_no_feature() {
+    assert!(!expired().is_feature_licensed("investing"));
 }
 
 #[test]
@@ -136,11 +136,11 @@ fn above_the_cap_an_active_user_may_sign_in_and_anyone_else_is_refused() {
 }
 
 #[test]
-fn an_expired_instance_still_applies_the_cap() {
-    assert_eq!(expired().may_sign_in(CAP - 1, false), Ok(()));
+fn on_an_expired_instance_only_active_users_may_sign_in() {
+    assert_eq!(expired().may_sign_in(CAP, true), Ok(()));
     assert_eq!(
-        expired().may_sign_in(CAP, false),
-        Err(SignInRefusal::ActiveUserCapReached)
+        expired().may_sign_in(0, false),
+        Err(SignInRefusal::ExpiredInstance)
     );
 }
 
@@ -149,7 +149,7 @@ fn with_an_invalid_licence_only_active_users_may_sign_in() {
     assert_eq!(invalid().may_sign_in(0, true), Ok(()));
     assert_eq!(
         invalid().may_sign_in(0, false),
-        Err(SignInRefusal::InvalidLicence)
+        Err(SignInRefusal::ExpiredInstance)
     );
 }
 
