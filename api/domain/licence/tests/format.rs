@@ -228,3 +228,19 @@ fn an_instance_address_with_a_scheme_in_a_payload_is_malformed() {
         Err(FormatError::Malformed)
     );
 }
+
+#[test]
+fn instance_address_says_why_it_was_refused() {
+    assert_eq!(
+        InstanceAddress::parse(" . "),
+        Err(InstanceAddressError::Blank)
+    );
+    assert_eq!(
+        InstanceAddress::parse("https://bank.example"),
+        Err(InstanceAddressError::SchemeOrPort)
+    );
+    assert_eq!(
+        InstanceAddress::parse("bank.example:8443"),
+        Err(InstanceAddressError::SchemeOrPort)
+    );
+}

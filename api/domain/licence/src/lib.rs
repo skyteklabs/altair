@@ -195,21 +195,40 @@ non_blank_text!(
     /// The Licensee's name as written on the Licence.
     LicenseeName
 );
+/// Why text is not an Instance address.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InstanceAddressError {
+    /// Nothing is left once whitespace and a trailing dot are dropped.
+    Blank,
+    /// It carries a scheme ("https://") or a port (":8443").
+    SchemeOrPort,
+}
+
 /// The address the licensed Instance is reached at: a bare domain.
 /// Surrounding whitespace and one trailing dot are dropped; a scheme or a
-/// port is refused, as is anything left blank. The only constructor is `new`,
-/// so the rule lives here; on the wire it is a plain string.
+/// port is refused, as is anything left blank. The only constructors are
+/// `parse` and `new`, so the rule lives here; on the wire it is a plain string.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub struct InstanceAddress(String);
 
 impl InstanceAddress {
-    pub fn new(text: impl Into<String>) -> Option<Self> {
+    pub fn parse(text: impl Into<String>) -> Result<Self, InstanceAddressError> {
         let text = text.into();
         let trimmed = text.trim();
         let domain = trimmed.strip_suffix('.').unwrap_or(trimmed);
+        if domain.is_empty() {
+            return Err(InstanceAddressError::Blank);
+        }
         // A scheme ("https://") and a port (":8443") both need a colon.
-        (!domain.is_empty() && !domain.contains(':')).then(|| Self(domain.to_owned()))
+        if domain.contains(':') {
+            return Err(InstanceAddressError::SchemeOrPort);
+        }
+        Ok(Self(domain.to_owned()))
+    }
+
+    pub fn new(text: impl Into<String>) -> Option<Self> {
+        Self::parse(text).ok()
     }
 
     pub fn as_str(&self) -> &str {

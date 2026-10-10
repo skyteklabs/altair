@@ -197,6 +197,21 @@ fn an_empty_instance_address_is_refused() {
     assert!(store.rows.lock().unwrap().is_empty());
 }
 
+#[test]
+fn an_instance_address_with_a_scheme_or_a_port_is_refused_as_invalid() {
+    for address in ["https://bank.example", "bank.example:8443"] {
+        let store = MemStore::default();
+        let mut req = request(StaffRole::Sales);
+        req.instance_address = address.into();
+        assert_eq!(
+            run(&signer(), &store, req),
+            Err(IssueError::Rule(RuleViolation::InstanceAddressInvalid)),
+            "{address}"
+        );
+        assert!(store.rows.lock().unwrap().is_empty(), "{address}");
+    }
+}
+
 /// UUIDv7 IDs, as `Uuid::now_v7` would give.
 struct V7Ids;
 
@@ -285,6 +300,10 @@ fn rule_violations_display_in_glossary_words() {
         (
             RuleViolation::InstanceAddressEmpty,
             "the Instance address is empty",
+        ),
+        (
+            RuleViolation::InstanceAddressInvalid,
+            "the Instance address has a scheme or a port",
         ),
     ];
     for (rule, text) in cases {
