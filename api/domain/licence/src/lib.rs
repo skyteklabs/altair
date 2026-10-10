@@ -198,15 +198,17 @@ non_blank_text!(
 /// Why text is not an Instance address.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum InstanceAddressError {
-    /// Nothing is left once whitespace and a trailing dot are dropped.
+    /// Nothing is left once whitespace and trailing dots are dropped.
     Blank,
-    /// It carries a scheme ("https://") or a port (":8443").
-    SchemeOrPort,
+    /// It carries a scheme ("https://"), a port (":8443"), a path ("/app"),
+    /// a user ("admin@") or inner whitespace.
+    NotABareDomain,
 }
 
 /// The address the licensed Instance is reached at: a bare domain.
-/// Surrounding whitespace and one trailing dot are dropped; a scheme or a
-/// port is refused, as is anything left blank. The only constructors are
+/// Surrounding whitespace and every trailing dot are dropped; a scheme, a
+/// port, a path, a user or inner whitespace is refused, as is anything left
+/// blank. The only constructors are
 /// `parse` and `new`, so the rule lives here; on the wire it is a plain string.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
@@ -216,13 +218,17 @@ impl InstanceAddress {
     pub fn parse(text: impl Into<String>) -> Result<Self, InstanceAddressError> {
         let text = text.into();
         let trimmed = text.trim();
-        let domain = trimmed.strip_suffix('.').unwrap_or(trimmed);
+        let domain = trimmed.trim_end_matches('.');
         if domain.is_empty() {
             return Err(InstanceAddressError::Blank);
         }
-        // A scheme ("https://") and a port (":8443") both need a colon.
-        if domain.contains(':') {
-            return Err(InstanceAddressError::SchemeOrPort);
+        // A scheme ("https://") and a port (":8443") both need a colon, a path
+        // a slash, and a user an at sign.
+        if domain
+            .chars()
+            .any(|c| matches!(c, ':' | '/' | '@') || c.is_whitespace())
+        {
+            return Err(InstanceAddressError::NotABareDomain);
         }
         Ok(Self(domain.to_owned()))
     }

@@ -187,12 +187,14 @@ fn blank_licensee_name_or_instance_address_is_refused_by_the_type() {
 }
 
 #[test]
-fn instance_address_drops_surrounding_whitespace_and_a_trailing_dot() {
+fn instance_address_drops_surrounding_whitespace_and_trailing_dots() {
     for written in [
         " bank.example",
         "bank.example\n",
         "bank.example.",
         " bank.example. ",
+        "bank.example..",
+        "bank.example...\t",
     ] {
         assert_eq!(
             InstanceAddress::new(written).map(|a| a.as_str().to_owned()),
@@ -203,20 +205,27 @@ fn instance_address_drops_surrounding_whitespace_and_a_trailing_dot() {
 }
 
 #[test]
-fn instance_address_refuses_a_scheme_or_a_port() {
+fn instance_address_refuses_anything_but_a_bare_domain() {
     for written in [
         "https://bank.example",
         "http://bank.example",
         "bank.example:8443",
         "https://bank.example:443",
+        "bank.example/app",
+        "bank.example/",
+        "admin@bank.example",
+        "bank example",
+        "bank.\texample",
     ] {
         assert_eq!(InstanceAddress::new(written), None, "{written:?}");
     }
 }
 
 #[test]
-fn instance_address_refuses_a_lone_dot() {
-    assert_eq!(InstanceAddress::new(" . "), None);
+fn instance_address_refuses_only_dots() {
+    for written in [" . ", "..."] {
+        assert_eq!(InstanceAddress::new(written), None, "{written:?}");
+    }
 }
 
 #[test]
@@ -235,12 +244,17 @@ fn instance_address_says_why_it_was_refused() {
         InstanceAddress::parse(" . "),
         Err(InstanceAddressError::Blank)
     );
-    assert_eq!(
-        InstanceAddress::parse("https://bank.example"),
-        Err(InstanceAddressError::SchemeOrPort)
-    );
-    assert_eq!(
-        InstanceAddress::parse("bank.example:8443"),
-        Err(InstanceAddressError::SchemeOrPort)
-    );
+    for written in [
+        "https://bank.example",
+        "bank.example:8443",
+        "bank.example/app",
+        "admin@bank.example",
+        "bank example",
+    ] {
+        assert_eq!(
+            InstanceAddress::parse(written),
+            Err(InstanceAddressError::NotABareDomain),
+            "{written:?}"
+        );
+    }
 }

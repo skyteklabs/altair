@@ -57,7 +57,8 @@ pub enum RuleViolation {
     ExpiryBeforeIssue,
     LicenseeNameEmpty,
     InstanceAddressEmpty,
-    /// The Instance address carries a scheme or a port, not a bare domain.
+    /// The Instance address is not a bare domain: it carries a scheme, a
+    /// port, a path, a user or inner whitespace.
     InstanceAddressInvalid,
 }
 
@@ -77,7 +78,7 @@ impl fmt::Display for RuleViolation {
             RuleViolation::LicenseeNameEmpty => f.write_str("the Licensee name is empty"),
             RuleViolation::InstanceAddressEmpty => f.write_str("the Instance address is empty"),
             RuleViolation::InstanceAddressInvalid => {
-                f.write_str("the Instance address has a scheme or a port")
+                f.write_str("the Instance address is not a bare domain")
             }
         }
     }
@@ -204,7 +205,7 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
     let instance_address = InstanceAddress::parse(req.instance_address).map_err(|error| {
         IssueError::Rule(match error {
             InstanceAddressError::Blank => RuleViolation::InstanceAddressEmpty,
-            InstanceAddressError::SchemeOrPort => RuleViolation::InstanceAddressInvalid,
+            InstanceAddressError::NotABareDomain => RuleViolation::InstanceAddressInvalid,
         })
     })?;
     let issued = req.at.to_offset(UtcOffset::UTC).date();

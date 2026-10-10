@@ -198,8 +198,14 @@ fn an_empty_instance_address_is_refused() {
 }
 
 #[test]
-fn an_instance_address_with_a_scheme_or_a_port_is_refused_as_invalid() {
-    for address in ["https://bank.example", "bank.example:8443"] {
+fn an_instance_address_that_is_not_a_bare_domain_is_refused_as_invalid() {
+    for address in [
+        "https://bank.example",
+        "bank.example:8443",
+        "bank.example/app",
+        "admin@bank.example",
+        "bank example",
+    ] {
         let store = MemStore::default();
         let mut req = request(StaffRole::Sales);
         req.instance_address = address.into();
@@ -303,7 +309,7 @@ fn rule_violations_display_in_glossary_words() {
         ),
         (
             RuleViolation::InstanceAddressInvalid,
-            "the Instance address has a scheme or a port",
+            "the Instance address is not a bare domain",
         ),
     ];
     for (rule, text) in cases {
