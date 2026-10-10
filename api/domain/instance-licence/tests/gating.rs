@@ -183,3 +183,8 @@ fn the_cap_warning_rounds_90_percent_up() {
 fn the_cap_warning_is_not_due_with_an_invalid_licence() {
     assert!(!invalid().cap_warning_due(1_000));
 }
+
+#[test]
+fn the_cap_warning_is_not_due_on_an_expired_instance() {
+    assert!(!expired().cap_warning_due(CAP));
+}
