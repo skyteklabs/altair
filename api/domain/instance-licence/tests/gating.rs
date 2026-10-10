@@ -102,7 +102,7 @@ fn an_expired_instance_keeps_its_licensed_features() {
 }
 
 #[test]
-fn no_feature_is_licensed_without_a_valid_licence() {
+fn an_invalid_licence_licenses_no_feature() {
     assert!(!invalid().is_feature_licensed("investing"));
 }
 
@@ -145,11 +145,11 @@ fn an_expired_instance_still_applies_the_cap() {
 }
 
 #[test]
-fn without_a_valid_licence_only_active_users_may_sign_in() {
+fn with_an_invalid_licence_only_active_users_may_sign_in() {
     assert_eq!(invalid().may_sign_in(0, true), Ok(()));
     assert_eq!(
         invalid().may_sign_in(0, false),
-        Err(SignInRefusal::NoValidLicence)
+        Err(SignInRefusal::InvalidLicence)
     );
 }
 
@@ -180,6 +180,6 @@ fn the_cap_warning_rounds_90_percent_up() {
 }
 
 #[test]
-fn the_cap_warning_is_not_due_without_a_valid_licence() {
+fn the_cap_warning_is_not_due_with_an_invalid_licence() {
     assert!(!invalid().cap_warning_due(1_000));
 }

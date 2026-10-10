@@ -2,8 +2,8 @@
 //!
 //! Checks run in a fixed order, and each `Invalid` reason has one trigger:
 //! no file, envelope shape, format version, strict parse, key ID, signature,
-//! Instance ID, Instance address (ADR-0011). Only then is the Licence term checked against `today`
-//! (ADR-0010): expiry is the end of the expiry date, the next
+//! Instance ID, Instance address (ADR-0011). Only then is the Licence term
+//! checked against `today` (ADR-0010): expiry is the end of the expiry date, the next
 //! [`GRACE_PERIOD_DAYS`] are the Grace period, and after that the Instance is
 //! an Expired Instance. Every date comes in as an input; nothing reads a clock.
 //!
@@ -28,7 +28,6 @@ pub enum InstanceLicenceReason {
     UnknownKeyId,
     BadSignature,
     WrongInstanceId,
-    /// The Licence names another Instance address than the one configured.
     WrongInstanceAddress,
 }
 
@@ -37,8 +36,9 @@ pub enum InstanceLicenceReason {
 pub enum SignInRefusal {
     /// The Instance is at its Active User cap and this User is not an Active User.
     ActiveUserCapReached,
-    /// There is no valid Licence, so no Active User cap to admit anyone new under.
-    NoValidLicence,
+    /// The Licence is `Invalid`, so there is no Active User cap to admit
+    /// anyone new under.
+    InvalidLicence,
 }
 
 /// Days after the expiry date during which writes still work (ADR-0010).
@@ -49,7 +49,7 @@ pub const EXPIRY_WARNING_DAYS: [i64; 3] = [30, 14, 7];
 
 /// Percentage of the Active User cap at which Instance administrators are
 /// warned (ADR-0011).
-pub const CAP_WARNING_PERCENT: u64 = 90;
+pub const ACTIVE_USER_CAP_WARNING_PERCENT: u64 = 90;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LicenceStatus {
@@ -93,8 +93,8 @@ impl LicenceStatus {
     }
 
     /// Whether the Licence switches on the Licensed feature named `feature`.
-    /// An Expired Instance keeps its Licensed features, so nothing it holds is
-    /// hidden; without a valid Licence no feature is licensed.
+    /// A Licence past its Grace period keeps its Licensed features, so nothing
+    /// it unlocked is hidden; an `Invalid` Licence licenses no feature.
     pub fn is_feature_licensed(&self, feature: &str) -> bool {
         self.licence()
             .is_some_and(|licence| licence.licensed_features.iter().any(|f| f == feature))
@@ -112,7 +112,7 @@ impl LicenceStatus {
         if is_active_user {
             return Ok(());
         }
-        let licence = self.licence().ok_or(SignInRefusal::NoValidLicence)?;
+        let licence = self.licence().ok_or(SignInRefusal::InvalidLicence)?;
         if active_user_count < licence.active_user_cap.get() {
             Ok(())
         } else {
@@ -121,11 +121,11 @@ impl LicenceStatus {
     }
 
     /// Whether the Active User cap warning is due: once the Active User count
-    /// reaches [`CAP_WARNING_PERCENT`] of the cap.
+    /// reaches [`ACTIVE_USER_CAP_WARNING_PERCENT`] of the cap.
     pub fn cap_warning_due(&self, active_user_count: u32) -> bool {
         self.licence().is_some_and(|licence| {
             u64::from(active_user_count) * 100
-                >= u64::from(licence.active_user_cap.get()) * CAP_WARNING_PERCENT
+                >= u64::from(licence.active_user_cap.get()) * ACTIVE_USER_CAP_WARNING_PERCENT
         })
     }
 
@@ -202,11 +202,7 @@ pub fn evaluate(
     if licence.instance_id != this_instance {
         return LicenceStatus::Invalid(WrongInstanceId);
     }
-    if !licence
-        .instance_address
-        .as_str()
-        .eq_ignore_ascii_case(this_address.as_str())
-    {
+    if !licence.instance_address.matches(this_address) {
         return LicenceStatus::Invalid(WrongInstanceAddress);
     }
     match term(&licence, today) {

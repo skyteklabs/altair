@@ -200,6 +200,14 @@ non_blank_text!(
     InstanceAddress
 );
 
+impl InstanceAddress {
+    /// Whether `other` names the same Instance address. Domains are compared
+    /// without regard to case.
+    pub fn matches(&self, other: &InstanceAddress) -> bool {
+        self.0.eq_ignore_ascii_case(&other.0)
+    }
+}
+
 /// The signed content of a Licence. Unknown fields are rejected.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
