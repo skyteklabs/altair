@@ -73,10 +73,7 @@ impl LicenceStatus {
     /// Whether the Instance may record anything new. No status ever hides or
     /// deletes data; the rest only make the Instance read-only.
     pub fn may_write(&self) -> bool {
-        matches!(
-            self,
-            LicenceStatus::Valid(_) | LicenceStatus::GracePeriod(_)
-        )
+        self.licence_in_force().is_some()
     }
 
     /// The notice due on `today`. Worked out from the Licence's own term, so
