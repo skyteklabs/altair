@@ -20,6 +20,7 @@ fn evaluate_on(licence: &Licence, today: Date) -> LicenceStatus {
     evaluate(
         Some(&file_signed_by(&licence.payload_bytes(), 7)),
         InstanceId::parse(THIS).unwrap(),
+        &this_address(),
         &trusted(&[("key-a", 7)]),
         today,
     )
@@ -99,6 +100,7 @@ fn no_invalid_reason_may_write() {
         UnknownKeyId,
         BadSignature,
         WrongInstanceId,
+        WrongInstanceAddress,
     ] {
         assert!(!LicenceStatus::Invalid(reason).may_write(), "{reason:?}");
     }
@@ -179,6 +181,7 @@ fn a_valid_licence_brings_an_instance_with_no_licence_straight_back_to_valid() {
     let none = evaluate(
         None,
         InstanceId::parse(THIS).unwrap(),
+        &this_address(),
         &trusted(&[("key-a", 7)]),
         today,
     );

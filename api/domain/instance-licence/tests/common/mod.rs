@@ -8,6 +8,12 @@ use uuid::uuid;
 
 pub const THIS: &str = "0b7e6c2a-1d3f-4a5b-9c8d-7e6f5a4b3c2d";
 pub const OTHER: &str = "c4d3e2f1-0a9b-4c8d-9e7f-6a5b4c3d2e1f";
+/// The Instance address every fixture Licence names and every test Instance is configured with.
+pub const ADDRESS: &str = "bank.example";
+
+pub fn this_address() -> InstanceAddress {
+    InstanceAddress::new(ADDRESS).unwrap()
+}
 
 pub fn seed_key(seed: u8) -> SigningKey {
     SigningKey::from_bytes(&[seed; 32])
@@ -26,7 +32,7 @@ pub fn licence_for(instance: &str, key_id: &str) -> Licence {
         licensee_id: LicenseeId::from_uuid(uuid!("66666666-7777-4888-8999-aaaaaaaaaaaa")).unwrap(),
         licensee_name: LicenseeName::new("Koperasi Maju").unwrap(),
         instance_id: InstanceId::parse(instance).unwrap(),
-        instance_address: InstanceAddress::new("bank.example").unwrap(),
+        instance_address: this_address(),
         issued: date!(2026 - 10 - 08),
         expires: date!(2027 - 10 - 08),
         active_user_cap: ActiveUserCap::new(50).unwrap(),
