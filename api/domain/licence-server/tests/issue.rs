@@ -197,6 +197,27 @@ fn an_empty_instance_address_is_refused() {
     assert!(store.rows.lock().unwrap().is_empty());
 }
 
+#[test]
+fn an_instance_address_that_is_not_a_bare_domain_is_refused_as_invalid() {
+    for address in [
+        "https://bank.example",
+        "bank.example:8443",
+        "bank.example/app",
+        "admin@bank.example",
+        "bank example",
+    ] {
+        let store = MemStore::default();
+        let mut req = request(StaffRole::Sales);
+        req.instance_address = address.into();
+        assert_eq!(
+            run(&signer(), &store, req),
+            Err(IssueError::Rule(RuleViolation::InstanceAddressInvalid)),
+            "{address}"
+        );
+        assert!(store.rows.lock().unwrap().is_empty(), "{address}");
+    }
+}
+
 /// UUIDv7 IDs, as `Uuid::now_v7` would give.
 struct V7Ids;
 
@@ -285,6 +306,10 @@ fn rule_violations_display_in_glossary_words() {
         (
             RuleViolation::InstanceAddressEmpty,
             "the Instance address is empty",
+        ),
+        (
+            RuleViolation::InstanceAddressInvalid,
+            "the Instance address is not a bare domain",
         ),
     ];
     for (rule, text) in cases {

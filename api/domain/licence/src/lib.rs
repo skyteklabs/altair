@@ -195,10 +195,71 @@ non_blank_text!(
     /// The Licensee's name as written on the Licence.
     LicenseeName
 );
-non_blank_text!(
-    /// The address the licensed Instance is reached at.
-    InstanceAddress
-);
+/// Why text is not an Instance address.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InstanceAddressError {
+    /// Nothing is left once whitespace and trailing dots are dropped.
+    Blank,
+    /// It carries a scheme ("https://"), a port (":8443"), a path ("/app"),
+    /// a user ("admin@") or inner whitespace.
+    NotABareDomain,
+}
+
+/// The address the licensed Instance is reached at: a bare domain.
+/// Surrounding whitespace and every trailing dot are dropped; a scheme, a
+/// port, a path, a user or inner whitespace is refused, as is anything left
+/// blank. The only constructors are
+/// `parse` and `new`, so the rule lives here; on the wire it is a plain string.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub struct InstanceAddress(String);
+
+impl InstanceAddress {
+    pub fn parse(text: impl Into<String>) -> Result<Self, InstanceAddressError> {
+        let text = text.into();
+        let trimmed = text.trim();
+        let domain = trimmed.trim_end_matches('.');
+        if domain.is_empty() {
+            return Err(InstanceAddressError::Blank);
+        }
+        // A scheme ("https://") and a port (":8443") both need a colon, a path
+        // a slash, and a user an at sign.
+        if domain
+            .chars()
+            .any(|c| matches!(c, ':' | '/' | '@') || c.is_whitespace())
+        {
+            return Err(InstanceAddressError::NotABareDomain);
+        }
+        Ok(Self(domain.to_owned()))
+    }
+
+    pub fn new(text: impl Into<String>) -> Option<Self> {
+        Self::parse(text).ok()
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Whether `other` names the same Instance address. Domains are compared
+    /// without regard to case.
+    pub fn matches(&self, other: &InstanceAddress) -> bool {
+        self.0.eq_ignore_ascii_case(&other.0)
+    }
+}
+
+impl TryFrom<String> for InstanceAddress {
+    type Error = FormatError;
+    fn try_from(text: String) -> Result<Self, FormatError> {
+        Self::new(text).ok_or(FormatError::Malformed)
+    }
+}
+
+impl From<InstanceAddress> for String {
+    fn from(address: InstanceAddress) -> String {
+        address.0
+    }
+}
 
 /// The signed content of a Licence. Unknown fields are rejected.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

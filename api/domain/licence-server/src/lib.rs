@@ -9,8 +9,8 @@ pub mod test_support;
 
 use ed25519_dalek::VerifyingKey;
 use licence::{
-    ActiveUserCap, FORMAT_VERSION, InstanceId, KeyId, Licence, LicenceId, LicenseeId,
-    encode_envelope, verify_signature,
+    ActiveUserCap, FORMAT_VERSION, InstanceAddressError, InstanceId, KeyId, Licence, LicenceId,
+    LicenseeId, encode_envelope, verify_signature,
 };
 pub use licence::{InstanceAddress, LicenseeName};
 use std::fmt;
@@ -50,11 +50,16 @@ pub struct StaffMember {
 /// A business rule the command refused. Each variant names one rule.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum RuleViolation {
-    OnlySalesOrAdminMayIssue { role: StaffRole },
+    OnlySalesOrAdminMayIssue {
+        role: StaffRole,
+    },
     ActiveUserCapMustBePositive,
     ExpiryBeforeIssue,
     LicenseeNameEmpty,
     InstanceAddressEmpty,
+    /// The Instance address is not a bare domain: it carries a scheme, a
+    /// port, a path, a user or inner whitespace.
+    InstanceAddressInvalid,
 }
 
 impl fmt::Display for RuleViolation {
@@ -72,6 +77,9 @@ impl fmt::Display for RuleViolation {
             }
             RuleViolation::LicenseeNameEmpty => f.write_str("the Licensee name is empty"),
             RuleViolation::InstanceAddressEmpty => f.write_str("the Instance address is empty"),
+            RuleViolation::InstanceAddressInvalid => {
+                f.write_str("the Instance address is not a bare domain")
+            }
         }
     }
 }
@@ -194,8 +202,12 @@ pub async fn issue<S: Signer, I: IdSource, L: LicenceStore>(
         .ok_or(IssueError::Rule(RuleViolation::ActiveUserCapMustBePositive))?;
     let licensee_name = LicenseeName::new(req.licensee_name)
         .ok_or(IssueError::Rule(RuleViolation::LicenseeNameEmpty))?;
-    let instance_address = InstanceAddress::new(req.instance_address)
-        .ok_or(IssueError::Rule(RuleViolation::InstanceAddressEmpty))?;
+    let instance_address = InstanceAddress::parse(req.instance_address).map_err(|error| {
+        IssueError::Rule(match error {
+            InstanceAddressError::Blank => RuleViolation::InstanceAddressEmpty,
+            InstanceAddressError::NotABareDomain => RuleViolation::InstanceAddressInvalid,
+        })
+    })?;
     let issued = req.at.to_offset(UtcOffset::UTC).date();
     if req.expires < issued {
         return Err(IssueError::Rule(RuleViolation::ExpiryBeforeIssue));

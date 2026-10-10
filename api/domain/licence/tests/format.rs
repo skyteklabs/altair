@@ -185,3 +185,76 @@ fn blank_licensee_name_or_instance_address_is_refused_by_the_type() {
         assert_eq!(InstanceAddress::new(blank), None, "{blank:?}");
     }
 }
+
+#[test]
+fn instance_address_drops_surrounding_whitespace_and_trailing_dots() {
+    for written in [
+        " bank.example",
+        "bank.example\n",
+        "bank.example.",
+        " bank.example. ",
+        "bank.example..",
+        "bank.example...\t",
+    ] {
+        assert_eq!(
+            InstanceAddress::new(written).map(|a| a.as_str().to_owned()),
+            Some("bank.example".to_owned()),
+            "{written:?}"
+        );
+    }
+}
+
+#[test]
+fn instance_address_refuses_anything_but_a_bare_domain() {
+    for written in [
+        "https://bank.example",
+        "http://bank.example",
+        "bank.example:8443",
+        "https://bank.example:443",
+        "bank.example/app",
+        "bank.example/",
+        "admin@bank.example",
+        "bank example",
+        "bank.\texample",
+    ] {
+        assert_eq!(InstanceAddress::new(written), None, "{written:?}");
+    }
+}
+
+#[test]
+fn instance_address_refuses_only_dots() {
+    for written in [" . ", "..."] {
+        assert_eq!(InstanceAddress::new(written), None, "{written:?}");
+    }
+}
+
+#[test]
+fn an_instance_address_with_a_scheme_in_a_payload_is_malformed() {
+    let payload = String::from_utf8(sample().payload_bytes()).unwrap();
+    let with_scheme = payload.replace("\"bank.example\"", "\"https://bank.example\"");
+    assert_eq!(
+        parse_payload(with_scheme.as_bytes()),
+        Err(FormatError::Malformed)
+    );
+}
+
+#[test]
+fn instance_address_says_why_it_was_refused() {
+    assert_eq!(
+        InstanceAddress::parse(" . "),
+        Err(InstanceAddressError::Blank)
+    );
+    for written in [
+        "https://bank.example",
+        "bank.example:8443",
+        "bank.example/app",
+        "admin@bank.example",
+        "bank example",
+    ] {
+        assert_eq!(
+            InstanceAddress::parse(written),
+            Err(InstanceAddressError::NotABareDomain),
+            "{written:?}"
+        );
+    }
+}

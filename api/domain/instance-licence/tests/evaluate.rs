@@ -19,6 +19,7 @@ fn evaluate_file(file: Option<&[u8]>, keys: &[(&str, u8)]) -> LicenceStatus {
     evaluate(
         file,
         InstanceId::parse(THIS).unwrap(),
+        &this_address(),
         &trusted(keys),
         date!(2026 - 10 - 08),
     )

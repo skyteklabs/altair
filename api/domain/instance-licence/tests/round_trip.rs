@@ -1,6 +1,6 @@
 use ed25519_dalek::SigningKey;
 use instance_licence::{LicenceStatus, evaluate};
-use licence::{KeyId, LicenseeId};
+use licence::{InstanceAddress, KeyId, LicenseeId};
 use licence_server::test_support::{MemStore, SeqIds, TestSigner};
 use licence_server::*;
 use time::macros::{date, datetime};
@@ -36,6 +36,7 @@ fn a_licence_issued_by_the_licence_server_is_valid_on_the_instance() {
     let status = evaluate(
         Some(&issued.bytes),
         issued.instance_id,
+        &InstanceAddress::new("bank.example").unwrap(),
         &trusted,
         date!(2026 - 10 - 08),
     );

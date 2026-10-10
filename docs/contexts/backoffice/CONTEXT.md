@@ -107,7 +107,7 @@ The 14 days after a Licence expires during which its Instance works normally but
 _Avoid_: Buffer, overdue period
 
 **Expired Instance**:
-An Instance with no valid Licence, as ADR-0011 defines it, including one revoked or expired past its Grace period: all data stays readable, but nothing new can be recorded until a valid Licence is installed.
+An Instance with no valid Licence, as ADR-0011 defines it, including one revoked or expired past its Grace period: all data stays readable, but nothing new can be recorded and only Active Users may sign in until a valid Licence is installed.
 _Avoid_: Locked instance, disabled instance, unlicensed
 
 ### Not yet modelled
