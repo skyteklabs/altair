@@ -195,16 +195,44 @@ non_blank_text!(
     /// The Licensee's name as written on the Licence.
     LicenseeName
 );
-non_blank_text!(
-    /// The address the licensed Instance is reached at.
-    InstanceAddress
-);
+/// The address the licensed Instance is reached at: a bare domain.
+/// Surrounding whitespace and one trailing dot are dropped; a scheme or a
+/// port is refused, as is anything left blank. The only constructor is `new`,
+/// so the rule lives here; on the wire it is a plain string.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
+pub struct InstanceAddress(String);
 
 impl InstanceAddress {
+    pub fn new(text: impl Into<String>) -> Option<Self> {
+        let text = text.into();
+        let trimmed = text.trim();
+        let domain = trimmed.strip_suffix('.').unwrap_or(trimmed);
+        // A scheme ("https://") and a port (":8443") both need a colon.
+        (!domain.is_empty() && !domain.contains(':')).then(|| Self(domain.to_owned()))
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
     /// Whether `other` names the same Instance address. Domains are compared
     /// without regard to case.
     pub fn matches(&self, other: &InstanceAddress) -> bool {
         self.0.eq_ignore_ascii_case(&other.0)
+    }
+}
+
+impl TryFrom<String> for InstanceAddress {
+    type Error = FormatError;
+    fn try_from(text: String) -> Result<Self, FormatError> {
+        Self::new(text).ok_or(FormatError::Malformed)
+    }
+}
+
+impl From<InstanceAddress> for String {
+    fn from(address: InstanceAddress) -> String {
+        address.0
     }
 }
 

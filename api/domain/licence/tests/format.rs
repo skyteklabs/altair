@@ -185,3 +185,46 @@ fn blank_licensee_name_or_instance_address_is_refused_by_the_type() {
         assert_eq!(InstanceAddress::new(blank), None, "{blank:?}");
     }
 }
+
+#[test]
+fn instance_address_drops_surrounding_whitespace_and_a_trailing_dot() {
+    for written in [
+        " bank.example",
+        "bank.example\n",
+        "bank.example.",
+        " bank.example. ",
+    ] {
+        assert_eq!(
+            InstanceAddress::new(written).map(|a| a.as_str().to_owned()),
+            Some("bank.example".to_owned()),
+            "{written:?}"
+        );
+    }
+}
+
+#[test]
+fn instance_address_refuses_a_scheme_or_a_port() {
+    for written in [
+        "https://bank.example",
+        "http://bank.example",
+        "bank.example:8443",
+        "https://bank.example:443",
+    ] {
+        assert_eq!(InstanceAddress::new(written), None, "{written:?}");
+    }
+}
+
+#[test]
+fn instance_address_refuses_a_lone_dot() {
+    assert_eq!(InstanceAddress::new(" . "), None);
+}
+
+#[test]
+fn an_instance_address_with_a_scheme_in_a_payload_is_malformed() {
+    let payload = String::from_utf8(sample().payload_bytes()).unwrap();
+    let with_scheme = payload.replace("\"bank.example\"", "\"https://bank.example\"");
+    assert_eq!(
+        parse_payload(with_scheme.as_bytes()),
+        Err(FormatError::Malformed)
+    );
+}
